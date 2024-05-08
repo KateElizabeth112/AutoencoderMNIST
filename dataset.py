@@ -1,17 +1,21 @@
 from torch.utils.data.dataset import Dataset
-from torch.utils.data.dataloader import DataLoader
-from torch.utils.data import Subset
 import os
 import numpy as np
 import struct
 from array import array
-import torch
 
 
 class MNIST(Dataset):
-    def __init__(self, root_dir, train=True, transform=None):
+    def __init__(self, root_dir, train=True, transform=None, subset_idx=None):
         self.root_dir = root_dir
         self.transform = transform
+        self.train = train
+
+        # if the subset index is not none, check that it is an integer list
+        if not (subset_idx is None):
+            assert isinstance(subset_idx, (list, np.ndarray)), "subset_idx is not an array or list"
+            assert isinstance(subset_idx[0], np.int64), "idx array element is not an np.int64 integer"
+        self.subset_idx = subset_idx
 
         assert isinstance(train, bool), "Train parameter must be a boolean"
         if train:
@@ -26,27 +30,22 @@ class MNIST(Dataset):
         return images.shape[0]
 
     def read_images_labels(self):
-        labels = []
-        with open(self.labels_path, 'rb') as file:
-            magic, size = struct.unpack(">II", file.read(8))
-            if magic != 2049:
-                raise ValueError('Magic number mismatch, expected 2049, got {}'.format(magic))
-            labels = array("B", file.read())
+        import pickle as pkl
+        if self.train:
+            f = open(os.path.join(self.root_dir, "train_data.pkl"), "rb")
+            [images, labels] = pkl.load(f)
+            f.close()
+        else:
+            f = open(os.path.join(self.root_dir, "test_data.pkl"), "rb")
+            [images, labels] = pkl.load(f)
+            f.close()
 
-        with open(self.images_path, 'rb') as file:
-            magic, size, rows, cols = struct.unpack(">IIII", file.read(16))
-            if magic != 2051:
-                raise ValueError('Magic number mismatch, expected 2051, got {}'.format(magic))
-            image_data = array("B", file.read())
-        images = []
-        for i in range(size):
-            images.append([0] * rows * cols)
-        for i in range(size):
-            img = np.array(image_data[i * rows * cols:(i + 1) * rows * cols])
-            img = img.reshape(28, 28)
-            images[i][:] = img
+        # if we have a subset idx, split the array to include only the listed indices
+        if not (self.subset_idx is None):
+            images = images[self.subset_idx, :]
+            labels = labels[self.subset_idx]
 
-        return np.array(images), np.array(labels)
+        return images, labels
 
     # TODO for an autoencoder the label may need to be the same as the image
     def __getitem__(self, idx):
@@ -57,9 +56,18 @@ class MNIST(Dataset):
 
 
 def main():
-    dataset = MNIST(root_dir='/Users/katecevora/Documents/PhD/data/MNIST', train=True)
+    dataset = MNIST(root_dir='/Users/katecevora/Documents/PhD/data/MNIST', train=False)
     images, labels = dataset.read_images_labels()
-    print("Hi")
+
+    # get an index of locations where the label is equal to 7 only
+    idx = np.where(labels == 7)[0]
+
+    # save this index for use later
+    import pickle as pkl
+    f = open("subset_index.pkl", "wb")
+    pkl.dump(idx, f)
+    f.close()
+
 
 
 if __name__ == "__main__":

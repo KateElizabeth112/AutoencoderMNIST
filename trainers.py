@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
+from torch.utils.data.dataset import Dataset
 
 class TrainerParams:
     def __init__(self, n_epochs=30, num_workers=0, batch_size=20):
@@ -15,6 +16,8 @@ class Trainer:
         # check that the objects are instances of the correct class
         assert isinstance(params, TrainerParams), "params is not an instance of trainerParams"
         assert isinstance(model, nn.Module), "model is not an instance of nn.Module"
+        assert isinstance(train_data, Dataset), "train_data is not an instance of Dataset"
+        assert isinstance(test_data, Dataset), "test_data is not an instance of Dataset"
 
         self.model = model
         self.params = params

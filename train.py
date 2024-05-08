@@ -10,9 +10,15 @@ def main():
     # convert data to torch.FloatTensor
     transform = transforms.ToTensor()
 
+    # load a subset of indices corresponding to images labelled with 7 only
+    import pickle as pkl
+    f = open("subset_index.pkl", "rb")
+    idx = pkl.load(f)
+    f.close()
+
     # load the training and test datasets
     train_data = MNIST(root_dir='/Users/katecevora/Documents/PhD/data/MNIST', train=True, transform=transform)
-    test_data = MNIST(root_dir='/Users/katecevora/Documents/PhD/data/MNIST', train=False, transform=transform)
+    test_data = MNIST(root_dir='/Users/katecevora/Documents/PhD/data/MNIST', train=False, transform=transform, subset_idx=idx)
 
     model_name = "autoencoderMNIST.pt"
     model = ConvAutoencoder(save_path=os.path.join("./", model_name))
@@ -21,7 +27,7 @@ def main():
 
     trainer = Trainer(model, params, train_data, test_data)
 
-    #trainer.train()
+    trainer.train()
     trainer.eval()
 
 
