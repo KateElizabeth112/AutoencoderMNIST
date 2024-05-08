@@ -3,7 +3,8 @@ import os
 import torchvision.transforms as transforms
 from trainers import Trainer, TrainerParams
 from autoencoder2D import ConvAutoencoder
-from dataset import MNIST
+from torch.utils.data import Subset
+from torchvision import datasets
 
 
 def main():
@@ -17,8 +18,8 @@ def main():
     f.close()
 
     # load the training and test datasets
-    train_data = MNIST(root_dir='/Users/katecevora/Documents/PhD/data/MNIST', train=True, transform=transform)
-    test_data = MNIST(root_dir='/Users/katecevora/Documents/PhD/data/MNIST', train=False, transform=transform, subset_idx=idx)
+    train_data = datasets.MNIST(root='~/.pytorch/MNIST_data/', train=True, download=True, transform=transform)
+    test_data = Subset(datasets.MNIST(root='~/.pytorch/MNIST_data/', train=False, download=True, transform=transform), idx)
 
     model_name = "autoencoderMNIST.pt"
     model = ConvAutoencoder(save_path=os.path.join("./", model_name))
