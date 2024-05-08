@@ -1,9 +1,9 @@
 # run the trainers
 import os
-from torchvision import datasets
 import torchvision.transforms as transforms
 from trainers import Trainer, TrainerParams
 from autoencoder2D import ConvAutoencoder
+from dataset import MNIST
 
 
 def main():
@@ -11,8 +11,8 @@ def main():
     transform = transforms.ToTensor()
 
     # load the training and test datasets
-    train_data = datasets.MNIST(root='~/.pytorch/MNIST_data/', train=True, download=True, transform=transform)
-    test_data = datasets.MNIST(root='~/.pytorch/MNIST_data/', train=False, download=True, transform=transform)
+    train_data = MNIST(root_dir='/Users/katecevora/Documents/PhD/data/MNIST', train=True, transform=transform)
+    test_data = MNIST(root_dir='/Users/katecevora/Documents/PhD/data/MNIST', train=False, transform=transform)
 
     model_name = "autoencoderMNIST.pt"
     model = ConvAutoencoder(save_path=os.path.join("./", model_name))
@@ -21,7 +21,7 @@ def main():
 
     trainer = Trainer(model, params, train_data, test_data)
 
-    trainer.train()
+    #trainer.train()
     trainer.eval()
 
 
