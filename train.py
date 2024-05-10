@@ -19,8 +19,10 @@ def main():
     f.close()
 
     # load the training and test datasets
-    train_data = Subset(datasets.MNIST(root='~/.pytorch/MNIST_data/', train=True, download=True, transform=transform), idx)
-    test_data = Subset(datasets.MNIST(root='~/.pytorch/MNIST_data/', train=False, download=True, transform=transform), idx)
+    train_data = Subset(datasets.MNIST(root='~/.pytorch/MNIST_data/', train=True, download=True, transform=transform),
+                        idx)
+    test_data = Subset(datasets.MNIST(root='~/.pytorch/MNIST_data/', train=False, download=True, transform=transform),
+                       idx)
 
     model_name = "autoencoderMNIST.pt"
     model = ConvAutoencoder(save_path=os.path.join("./", model_name))
@@ -29,22 +31,16 @@ def main():
 
     trainer = Trainer(model, params, train_data, test_data)
 
-    #trainer.train()
-    #trainer.eval()
+    # trainer.train()
+    # trainer.eval()
 
-    output = trainer.get_compressed()
-
-    ds = DiversityScore(output)
-
-    matrix = ds.cosineSimilarity()
-
-    print(matrix.shape)
-    print(matrix[0, 0])
-    print(matrix[1, 1])
+    ds = DiversityScore(model, params, train_data)
 
     score = ds.vendiScore()
+    pixel_vs = ds.vendiScorePixel()
 
     print("Vendi score {0:.2f}".format(score))
+    print("Pixel vendi score {0:.2f}".format(pixel_vs))
 
 
 if __name__ == "__main__":

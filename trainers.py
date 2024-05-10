@@ -31,7 +31,8 @@ class Trainer:
         self.test_data = test_data
 
         # prepare data loaders
-        self.train_loader = torch.utils.data.DataLoader(self.train_data, batch_size=self.params.batch_size, num_workers=self.params.num_workers)
+        self.train_loader = torch.utils.data.DataLoader(self.train_data, batch_size=self.params.batch_size,
+                                                        num_workers=self.params.num_workers)
         self.test_loader = torch.utils.data.DataLoader(self.test_data, batch_size=self.params.batch_size, num_workers=self.params.num_workers)
 
     def train(self):
@@ -126,38 +127,3 @@ class Trainer:
                 ax.get_yaxis().set_visible(False)
 
         plt.show()
-
-    def get_compressed(self):
-        """
-        Retrieves the compressed representations of a dataset from the middle layer of an autoencoder. Loads the most
-        recent model checkpoint to compute representations.
-        :return:
-        numpy.ndarray: 2D array of vector representations of each image.
-        """
-        # load the model from the latest checkpoint
-        checkpoint = torch.load(self.model.save_path)
-
-        # Load the model state dictionary
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-
-        # iterate over all images in the training dataset and extract representations
-        for i, (images, labels) in enumerate(self.train_loader):
-            preds, images_compressed = self.model(images)
-
-            # convert to a numpy array for easier handling after detaching gradient
-            images_compressed = images_compressed.detach().numpy()
-
-            # flatten all dimensions except the first
-            flattened_size = np.prod(images_compressed.shape[1:])
-            images_compressed = images_compressed.reshape((images_compressed.shape[0], flattened_size))
-
-            # stack the results from each batch until we have run over the entire dataset
-            if i == 0:
-                # assign the values of images compressed to output
-                output = copy(images_compressed)
-            else:
-                output = np.vstack((output, images_compressed))
-
-        assert len(output.shape) == 2, "The output array should have two dimensions but it has {}".format(len(output.shape))
-
-        return output
