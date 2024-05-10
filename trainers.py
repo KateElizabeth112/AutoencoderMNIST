@@ -4,6 +4,9 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
 from torch.utils.data.dataset import Dataset
+from copy import copy
+import os
+
 
 class TrainerParams:
     def __init__(self, n_epochs=30, num_workers=0, batch_size=20):
@@ -12,6 +15,9 @@ class TrainerParams:
         self.batch_size = batch_size
 
 class Trainer:
+    """
+    Trainer class for an Autoencoder model. Takes a model, parameters and train and test data.
+    """
     def __init__(self, model, params, train_data, test_data):
         # check that the objects are instances of the correct class
         assert isinstance(params, TrainerParams), "params is not an instance of trainerParams"
@@ -24,12 +30,16 @@ class Trainer:
         self.train_data = train_data
         self.test_data = test_data
 
-        # TODO move the dataloaders out and into a dataset class
         # prepare data loaders
         self.train_loader = torch.utils.data.DataLoader(self.train_data, batch_size=self.params.batch_size, num_workers=self.params.num_workers)
         self.test_loader = torch.utils.data.DataLoader(self.test_data, batch_size=self.params.batch_size, num_workers=self.params.num_workers)
 
     def train(self):
+        """
+        Trains the AE model for a number of epochs specified in self.params.n_epochs. Saves the model when training
+        is complete.
+        :return:
+        """
         # specify loss function
         criterion = nn.MSELoss()
 
@@ -50,9 +60,9 @@ class Trainer:
                 # clear the gradients of all optimized variables
                 optimizer.zero_grad()
                 # forward pass: compute predicted outputs by passing inputs to the model
-                outputs = self.model(images)
-                # calculate the loss
-                loss = criterion(outputs, images)
+                preds, images_compressed = self.model(images)
+                # calculate the loss using only the first output from the network
+                loss = criterion(preds, images)
                 # backward pass: compute gradient of the loss with respect to model parameters
                 loss.backward()
                 # perform a single optimization step (parameter update)
@@ -77,6 +87,14 @@ class Trainer:
 
     # Load a saved model and run the evaluation data through it
     def eval(self):
+        """
+        Loads a saved model from the latest checkpoint, runs a batch of evaluation data through it and plots the
+        predictions.
+        :return:
+        """
+        # check that the path exists
+        assert os.path.exists(self.model.save_path), "The model save path {} does not exist".format(self.model.save_path)
+
         # load the model from the latest checkpoint
         checkpoint = torch.load(self.model.save_path)
 
@@ -88,12 +106,12 @@ class Trainer:
         images, labels = next(dataiter)
 
         # get sample outputs
-        output = self.model(images)
+        preds, images_compressed = self.model(images)
         # prep images for display
         images = images.numpy()
 
         # output is resized into a batch of iages
-        output = output.view(self.params.batch_size, 1, 28, 28)
+        output = preds.view(self.params.batch_size, 1, 28, 28)
         # use detach when it's an output that requires_grad
         output = output.detach().numpy()
 
@@ -109,6 +127,37 @@ class Trainer:
 
         plt.show()
 
+    def get_compressed(self):
+        """
+        Retrieves the compressed representations of a dataset from the middle layer of an autoencoder. Loads the most
+        recent model checkpoint to compute representations.
+        :return:
+        numpy.ndarray: 2D array of vector representations of each image.
+        """
+        # load the model from the latest checkpoint
+        checkpoint = torch.load(self.model.save_path)
 
-    def plot(self):
-        return 0
+        # Load the model state dictionary
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+
+        # iterate over all images in the training dataset and extract representations
+        for i, (images, labels) in enumerate(self.train_loader):
+            preds, images_compressed = self.model(images)
+
+            # convert to a numpy array for easier handling after detaching gradient
+            images_compressed = images_compressed.detach().numpy()
+
+            # flatten all dimensions except the first
+            flattened_size = np.prod(images_compressed.shape[1:])
+            images_compressed = images_compressed.reshape((images_compressed.shape[0], flattened_size))
+
+            # stack the results from each batch until we have run over the entire dataset
+            if i == 0:
+                # assign the values of images compressed to output
+                output = copy(images_compressed)
+            else:
+                output = np.vstack((output, images_compressed))
+
+        assert len(output.shape) == 2, "The output array should have two dimensions but it has {}".format(len(output.shape))
+
+        return output

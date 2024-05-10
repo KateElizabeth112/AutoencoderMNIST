@@ -3,9 +3,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
-# define the NN architecture
 class ConvAutoencoder(nn.Module):
+    """
+    Simple convolutional autoencoder model.
+    """
     def __init__(self, save_path=""):
         super(ConvAutoencoder, self).__init__()
         # set the path to save the model
@@ -20,23 +21,29 @@ class ConvAutoencoder(nn.Module):
         self.pool = nn.MaxPool2d(2, 2)
 
         # Define the layers for the decoder
-        ## a kernel of 2 and a stride of 2 will increase the spatial dims by 2
+        # a kernel of 2 and a stride of 2 will increase the spatial dims by 2
         self.t_conv1 = nn.ConvTranspose2d(4, 16, 2, stride=2)
         self.t_conv2 = nn.ConvTranspose2d(16, 1, 2, stride=2)
 
     def forward(self, x):
+        """
+        Forward function for the network.
+        :param x: input to the network
+        :return:
+        x: output of the network
+        x_compressed: reperesentation of the input from the mid layer.
+        """
         # Encode
         # add hidden layers with relu activation function and maxpooling after
         x = F.relu(self.conv1(x))
         x = self.pool(x)
         x = F.relu(self.conv2(x))
-        x = self.pool(x)  # compressed representation, we will extract this
+        x_compressed = self.pool(x)  # compressed representation, we will extract this
 
-        ## decode ##
+        # Decode
         # add transpose conv layers, with relu activation function
-        x = F.relu(self.t_conv1(x))
+        x = F.relu(self.t_conv1(x_compressed))
         # output layer (with sigmoid for scaling from 0 to 1)
         x = F.sigmoid(self.t_conv2(x))
 
-        return x
-
+        return x, x_compressed
