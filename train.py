@@ -1,5 +1,5 @@
 # run the trainers
-#import mlflow
+import mlflow
 import os
 import numpy as np
 import torch
@@ -15,6 +15,13 @@ dataset_root = '~/.pytorch/MNIST_data/'
 
 # convert data to torch.FloatTensor
 transform = transforms.ToTensor()
+
+# Set our tracking server uri for logging with MLFlow
+mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
+
+# Create a new MLflow Experiment
+mlflow.set_experiment("Vendi Score MNIST")
+
 
 def generateSubsetIndex(data, category, n_samples, random_seed, train=True):
     # generate an index of data samples to use
@@ -97,6 +104,15 @@ def main():
 
     print("Vendi score {0:.2f}".format(score))
     print("Pixel vendi score {0:.2f}".format(pixel_vs))
+
+    # Start an MLflow run
+    with mlflow.start_run():
+        # Log the hyperparameters
+        mlflow.log_params(params)
+
+        # Log the vs metric
+        mlflow.log_metric("vs_encoded", score)
+        mlflow.log_metric("vs_pixel", pixel_vs)
 
 
 if __name__ == "__main__":
