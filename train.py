@@ -1,4 +1,5 @@
 # run the trainers
+#import mlflow
 import os
 import numpy as np
 import torch
@@ -14,7 +15,6 @@ dataset_root = '~/.pytorch/MNIST_data/'
 
 # convert data to torch.FloatTensor
 transform = transforms.ToTensor()
-
 
 def generateSubsetIndex(data, category, n_samples, random_seed, train=True):
     # generate an index of data samples to use
@@ -59,29 +59,38 @@ def generateSubsetIndex(data, category, n_samples, random_seed, train=True):
 
 
 def main():
+    # Define the model parameters for mlflow
+    params = {
+        "data_category": 5,
+        "n_samples": 500,
+        "random_seed": 112,
+        "n_layers": 3,
+        "n_epochs": 20,
+        "n_workers": 0,
+        "batch_size": 20,
+        "model_name": "autoencoderMNIST.pt"
+    }
+
     # load the training and test datasets
     train_data = datasets.MNIST(root=dataset_root, train=True, download=False, transform=transform)
     test_data = datasets.MNIST(root=dataset_root, train=False, download=False, transform=transform)
 
-    # generate a subset of indices corresponding to images labelled with 7 only
-    idx_test = generateSubsetIndex(test_data, 5, 890, 112, train=True)
-    idx_train = generateSubsetIndex(train_data,5, 5000, 112, train=True)
+    # generate a subset of indices corresponding to images labelled with a given category
+    idx_train = generateSubsetIndex(train_data, params["data_category"], params["n_samples"], params["random_seed"], train=True)
 
     # select a subset of datapoints
     train_data = Subset(datasets.MNIST(root=dataset_root, train=True, download=False, transform=transform), idx_train)
-    test_data = Subset(datasets.MNIST(root=dataset_root, train=False, download=False, transform=transform), idx_test)
 
-    model_name = "autoencoderMNIST.pt"
-    model = ConvAutoencoder(save_path=os.path.join("./", model_name))
+    model = ConvAutoencoder(save_path=os.path.join("./", params["model_name"]))
 
-    params = TrainerParams(n_epochs=5, num_workers=0, batch_size=20)
+    trainer_params = TrainerParams(n_epochs=params["n_epochs"], num_workers=params["n_workers"], batch_size=params["batch_size"])
 
-    trainer = Trainer(model, params, train_data, test_data)
+    trainer = Trainer(model, trainer_params, train_data, test_data)
 
     # trainer.train()
     #trainer.eval(train=True)
 
-    ds = DiversityScore(model, params, test_data)
+    ds = DiversityScore(model, trainer_params, train_data)
 
     score = ds.vendiScore()
     pixel_vs = ds.vendiScorePixel()
