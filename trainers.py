@@ -87,7 +87,7 @@ class Trainer:
             }, self.model.save_path)
 
     # Load a saved model and run the evaluation data through it
-    def eval(self):
+    def eval(self, train=False):
         """
         Loads a saved model from the latest checkpoint, runs a batch of evaluation data through it and plots the
         predictions.
@@ -103,7 +103,10 @@ class Trainer:
         self.model.load_state_dict(checkpoint['model_state_dict'])
 
         # obtain one batch of test images
-        dataiter = iter(self.test_loader)
+        if train:
+            dataiter = iter(self.train_loader)
+        else:
+            dataiter = iter(self.test_loader)
         images, labels = next(dataiter)
 
         # get sample outputs

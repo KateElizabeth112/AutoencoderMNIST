@@ -1,28 +1,75 @@
 # run the trainers
 import os
+import numpy as np
+import torch
 import torchvision.transforms as transforms
 from trainers import Trainer, TrainerParams
 from autoencoder2D import ConvAutoencoder
 from torch.utils.data import Subset
 from torchvision import datasets
 from diversityScore import DiversityScore
+import random
+
+dataset_root = '~/.pytorch/MNIST_data/'
+
+# convert data to torch.FloatTensor
+transform = transforms.ToTensor()
+
+
+def generateSubsetIndex(data, category, n_samples, random_seed, train=True):
+    # generate an index of data samples to use
+    assert isinstance(category, int), "The category must be an integer in the range 0-9"
+    assert category <= 9, "The category value cannot be greater than 9."
+    assert category >= 0, "The category value cannot be less than 0"
+    assert isinstance(n_samples, int), "The number of samples must be an integer"
+
+    # TODO why doesn't this work here but it's fine in the main function
+    # open the full dataset
+    #data = datasets.MNIST(root=dataset_root, train=train, download=False, transform=transforms.ToTensor()),
+
+    # create a data loader
+    dataset_loader = torch.utils.data.DataLoader(data, batch_size=20, num_workers=0)
+
+    # iterate over the dataset to get the labels
+    labels = []
+    for data in dataset_loader:
+        _, label = data
+        labels += list(label.numpy())
+
+    # convert to numpy array
+    labels = np.array(labels)
+
+    # get an index of locations where the label is equal to the value of category
+    idx = np.where(labels == category)[0]
+
+    # check that the number of samples is less than the number of datapoints in that category
+    assert n_samples <= idx.shape[
+        0], "The number of samples ({}) must be less than the number of datapoints in the category ({})".format(
+        n_samples, idx.shape[0])
+
+    # sample with a random seed
+    random.seed(random_seed)
+    random_idx = random.sample(range(0, idx.shape[0]), n_samples)
+
+    subset_idx = idx[random_idx]
+
+    assert subset_idx.shape[0] == n_samples, "The number of samples in the idx_sample array does not match n_samples"
+
+    return subset_idx
 
 
 def main():
-    # convert data to torch.FloatTensor
-    transform = transforms.ToTensor()
-
-    # load a subset of indices corresponding to images labelled with 7 only
-    import pickle as pkl
-    f = open("subset_index.pkl", "rb")
-    idx = pkl.load(f)
-    f.close()
-
     # load the training and test datasets
-    train_data = Subset(datasets.MNIST(root='~/.pytorch/MNIST_data/', train=True, download=True, transform=transform),
-                        idx)
-    test_data = Subset(datasets.MNIST(root='~/.pytorch/MNIST_data/', train=False, download=True, transform=transform),
-                       idx)
+    train_data = datasets.MNIST(root=dataset_root, train=True, download=False, transform=transform)
+    test_data = datasets.MNIST(root=dataset_root, train=False, download=False, transform=transform)
+
+    # generate a subset of indices corresponding to images labelled with 7 only
+    idx_test = generateSubsetIndex(test_data, 5, 890, 112, train=True)
+    idx_train = generateSubsetIndex(train_data,5, 5000, 112, train=True)
+
+    # select a subset of datapoints
+    train_data = Subset(datasets.MNIST(root=dataset_root, train=True, download=False, transform=transform), idx_train)
+    test_data = Subset(datasets.MNIST(root=dataset_root, train=False, download=False, transform=transform), idx_test)
 
     model_name = "autoencoderMNIST.pt"
     model = ConvAutoencoder(save_path=os.path.join("./", model_name))
@@ -32,9 +79,9 @@ def main():
     trainer = Trainer(model, params, train_data, test_data)
 
     # trainer.train()
-    # trainer.eval()
+    #trainer.eval(train=True)
 
-    ds = DiversityScore(model, params, train_data)
+    ds = DiversityScore(model, params, test_data)
 
     score = ds.vendiScore()
     pixel_vs = ds.vendiScorePixel()
