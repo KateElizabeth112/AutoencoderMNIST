@@ -1,4 +1,5 @@
 # run the trainers
+import argparse
 import mlflow
 import os
 import numpy as np
@@ -10,6 +11,16 @@ from torch.utils.data import Subset
 from torchvision import datasets
 from diversityScore import DiversityScore
 import random
+import pickle as pkl
+
+# Set up the argument parser
+parser = argparse.ArgumentParser(description="Calculate the Vendi score for a dataset from pixel values")
+parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="MNIST_Pixel_VS")
+parser.add_argument("-p", "--params_file", type=str, help="Name of params file.", default="test_params.pkl")
+
+args = parser.parse_args()
+
+params_file_path = os.path.join("./params", args.experiment, args.params_file)
 
 dataset_root = '~/.pytorch/MNIST_data/'
 
@@ -20,7 +31,7 @@ transform = transforms.ToTensor()
 mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
 
 # Create a new MLflow Experiment
-mlflow.set_experiment("Vendi Score MNIST")
+mlflow.set_experiment(args.experiment)
 
 
 def generateSubsetIndex(data, category, n_samples, random_seed, train=True):
@@ -66,17 +77,15 @@ def generateSubsetIndex(data, category, n_samples, random_seed, train=True):
 
 
 def main():
-    # Define the model parameters for mlflow
-    params = {
-        "data_category": 5,
-        "n_samples": 500,
-        "random_seed": 112,
-        "n_layers": 3,
-        "n_epochs": 20,
-        "n_workers": 0,
-        "batch_size": 20,
-        "model_name": "autoencoderMNIST.pt"
-    }
+    # open a params file
+    assert os.path.exists(params_file_path), "The path {} to the params file does not exist.".format(params_file_path)
+
+    f = open(params_file_path, "rb")
+    params = pkl.load(f)
+    f.close()
+
+    # check the params file
+    assert isinstance(params, dict), f"Expected a dictionary, but got {type(params).__name__}"
 
     # load the training and test datasets
     train_data = datasets.MNIST(root=dataset_root, train=True, download=False, transform=transform)
