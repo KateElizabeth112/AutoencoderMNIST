@@ -47,6 +47,25 @@ class Trainer:
         # specify loss function
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
 
+        # create a container to store the train loss and associated epoch
+        loss_record = []
+        epochs_record = []
+
+        # Set frequency to save loss value and model
+        assert self.params.n_epochs > 0, "Number of epochs cannot be less than or equal to 0."
+        assert isinstance(self.params.n_epochs, int), "Number of epochs must be an integer"
+
+        if self.params.n_epochs >= 10000:
+            n_steps = 100
+        if self.params.n_epochs < 10000:
+            n_steps = 20
+        if self.params.n_epochs < 1000:
+            n_steps = 10
+        if self.params.n_epochs < 200:
+            n_steps = 5
+        if self.params.n_epochs < 100:
+            n_steps = 1
+
         for epoch in range(1, self.params.n_epochs + 1):
             # monitor training loss
             train_loss = 0.0
@@ -71,20 +90,27 @@ class Trainer:
                 # update running training loss
                 train_loss += loss.item() * images.size(0)
 
-            # print avg training statistics
-            train_loss = train_loss / len(self.train_loader)
-            print('Epoch: {} \tTraining Loss: {:.6f}'.format(
-                epoch,
-                train_loss
-            ))
+            # print and save training statistics every n_steps
+            if epoch % n_steps == 0:
+                train_loss = train_loss / len(self.train_loader)
+                print('Epoch: {} \tTraining Loss: {:.6f}'.format(
+                    epoch,
+                    train_loss
+                ))
 
-            # Checkpoint model
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': self.model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': train_loss,
-            }, self.model.save_path)
+                # Checkpoint model
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': self.model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'loss': train_loss,
+                }, self.model.save_path)
+
+                # store loss and epoch
+                epochs_record.append(epoch)
+                loss_record.append(train_loss)
+
+        return epochs_record, loss_record
 
     # Load a saved model and run the evaluation data through it
     def eval(self, train=False):
@@ -130,3 +156,4 @@ class Trainer:
                 ax.get_yaxis().set_visible(False)
 
         plt.show()
+
