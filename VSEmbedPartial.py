@@ -69,11 +69,14 @@ def main():
     Plotter = plotting.LossPlotter(train_epochs, train_loss, save_path=save_path)
     Plotter.plotTrainLoss()
 
+    # Save the reconstructions that the trained model can produce
+    trainer.eval(train=True, save_path="./")
+
     # Calculate the Vendi score using the embeddings from the model we just trained
     ds = DiversityScore(model, trainer_params, train_data)
 
+    # calculate the vendi score
     vs_encode = ds.vendiScore()
-
     print("Vendi score {0:.2f}".format(vs_encode))
 
     # Start an MLflow run
@@ -87,6 +90,8 @@ def main():
         # log the loss plot
         mlflow.log_artifact(os.path.join(save_path, "loss.png"))
 
+        # log the reconstruction plot
+        mlflow.log_metric(os.path.join(save_path, "reconstruction.png"))
 
 
 if __name__ == "__main__":

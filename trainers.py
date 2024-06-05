@@ -113,14 +113,19 @@ class Trainer:
         return epochs_record, loss_record
 
     # Load a saved model and run the evaluation data through it
-    def eval(self, train=False):
+    def eval(self, train=False, save_path=""):
         """
         Loads a saved model from the latest checkpoint, runs a batch of evaluation data through it and plots the
         predictions.
         :return:
         """
-        # check that the path exists
+        # check that the model path exists
         assert os.path.exists(self.model.save_path), "The model save path {} does not exist".format(self.model.save_path)
+
+        # check that the plot save path exists
+        assert isinstance(save_path, str), "The reconstruction image save path must be a string."
+        if save_path != "":
+            assert os.path.exists(save_path), "Save path {} for reconstruction image does not exist".format(save_path)
 
         # load the model from the latest checkpoint
         checkpoint = torch.load(self.model.save_path)
@@ -155,5 +160,8 @@ class Trainer:
                 ax.get_xaxis().set_visible(False)
                 ax.get_yaxis().set_visible(False)
 
-        plt.show()
+        if save_path == "":
+            plt.show()
+        else:
+            plt.savefig(os.path.join(save_path, "reconstruction.png"))
 
