@@ -109,10 +109,10 @@ def main():
     ds = DiversityScore(model, trainer_params, train_data)
 
     score = ds.vendiScore()
-    pixel_vs = ds.vendiScorePixel()
+    #pixel_vs = ds.vendiScorePixel()
 
     print("Vendi score {0:.2f}".format(score))
-    print("Pixel vendi score {0:.2f}".format(pixel_vs))
+    #print("Pixel vendi score {0:.2f}".format(pixel_vs))
 
     # Start an MLflow run
     with mlflow.start_run():
@@ -121,7 +121,7 @@ def main():
 
         # Log the vs metric
         mlflow.log_metric("vs_encoded", score)
-        mlflow.log_metric("vs_pixel", pixel_vs)
+        #mlflow.log_metric("vs_pixel", pixel_vs)
 
 
 if __name__ == "__main__":
