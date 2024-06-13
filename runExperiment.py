@@ -2,12 +2,12 @@ import os
 import subprocess
 
 params_folder = "params"
-experiment_name = "MNIST_Embed_VS_Partial"
-script_name = "VSEmbedPartial.py"
+experiment_name = "MNIST_Pixel_VS"
+script_name = "VSPixel.py"
 
 def main():
     n_samples_list = [20, 100, 500, 1000, 5000]
-    data_category_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    data_category_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "all"]
     seed = 112
 
     for n_samples in n_samples_list:

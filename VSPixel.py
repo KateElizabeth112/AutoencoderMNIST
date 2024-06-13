@@ -1,5 +1,4 @@
-# Script to calculate VS for a dataset which is encoded by an AE that is trained only on that dataset
-# Calculate the Vendi score for a dataset from embeddings of an AE model
+# Script to calculate VS for a dataset which is encoded by an AE that is trained on a much larger dataset
 import argparse
 import mlflow
 import os
@@ -16,7 +15,7 @@ import numpy as np
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the Vendi score for a dataset from embeddings of an AE model")
-parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="MNIST_Embed_VS_Partial")
+parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="MNIST_Pixel_VS")
 parser.add_argument("-p", "--params_file", type=str, help="Name of params file.", default="test_params.pkl")
 
 args = parser.parse_args()
@@ -48,42 +47,20 @@ def main():
 
     # load the training data
     train_data = datasets.MNIST(root=dataset_root, train=True, download=False, transform=transform)
-    test_data = datasets.MNIST(root=dataset_root, train=False, download=False, transform=transform)
 
     # generate a subset of indices corresponding to images labelled with a given category
     idx_train = generateSubsetIndex(train_data, params["data_category"], params["n_samples"], params["random_seed"], train=True)
     train_data = Subset(datasets.MNIST(root=dataset_root, train=True, download=False, transform=transform), idx_train)
 
-    # Get the number of test samples
-    n_test_samples = int(np.min((np.round(params["n_samples"] / 2), 500)))
-
-    # generate test subset index
-    idx_test = generateSubsetIndex(test_data, params["data_category"], n_test_samples, params["random_seed"], train=False)
-    test_data = Subset(datasets.MNIST(root=dataset_root, train=False, download=False, transform=transform), idx_test)
-
-    # Initialise a model with the name specified in the params dictionary for this experiment
-    model = ConvAutoencoder(save_path=os.path.join("./models", params["model_name"]))
-
-    # Train the model on the dataset
     trainer_params = TrainerParams(n_epochs=params["n_epochs"], num_workers=params["n_workers"],
                                    batch_size=params["batch_size"])
-    trainer = Trainer(model, trainer_params, train_data, test_data)
-    train_epochs, train_loss, test_loss = trainer.train()
-
-    # Plot the loss
-    save_path = "./"
-    Plotter = plotting.LossPlotter(train_epochs, train_loss, test_loss, save_path=save_path)
-    Plotter.plotLoss()
-
-    # Save the reconstructions that the trained model can produce
-    trainer.eval(train=True, save_path=save_path)
 
     # Calculate the Vendi score using the embeddings from the model we just trained
-    ds = DiversityScore(model, trainer_params, train_data)
+    ds = DiversityScore(train_data, trainer_params, model=None)
 
     # calculate the vendi score
-    vs_encode = ds.vendiScore()
-    print("Vendi score {0:.2f}".format(vs_encode))
+    vs_pixel = ds.vendiScorePixel()
+    print("Vendi score {0:.2f}".format(vs_pixel))
 
     # Start an MLflow run
     with mlflow.start_run():
@@ -91,13 +68,7 @@ def main():
         mlflow.log_params(params)
 
         # Log the vs metric
-        mlflow.log_metric("vs_encoded", vs_encode)
-
-        # log the loss plot
-        mlflow.log_artifact(os.path.join(save_path, "loss.png"))
-
-        # log the reconstruction plot
-        mlflow.log_artifact(os.path.join(save_path, "reconstruction.png"))
+        mlflow.log_metric("vs_pixel", vs_pixel)
 
 
 if __name__ == "__main__":

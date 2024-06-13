@@ -52,6 +52,10 @@ class ResultsPlotter:
             for N in n_samples:
                 # find the results matching category and number of samples
                 results_cat = results[(results["data_category"] == cat) & (results["n_samples"] == N)][self.metric].values
+
+                # Check that we have at least one result for this combo
+                assert results_cat.shape[0] != 0, "There are no experiments with category {0} and n_samples {1}".format(cat, N)
+
                 values.append(results_cat[0])
 
             # plot the series for a category
@@ -75,24 +79,28 @@ class LossPlotter:
     :param loss: List of loss values averaged over training/test set
     :param save_path: Path where the loss plot will be saved.
     """
-    def __init__(self, epochs, loss, save_path=""):
-        self.epochs = epochs
-        self.loss = loss
-        self.save_path = save_path
-
+    def __init__(self, epochs, train_loss, test_loss, save_path=""):
         # run some checks
         assert isinstance(epochs, list), "The epochs variable must be of type list"
-        assert isinstance(loss, list), "The loss variable must be of type list"
+        assert isinstance(train_loss, list), "The train loss variable must be of type list"
+        assert isinstance(test_loss, list), "The test loss variable must be of type list"
         assert isinstance(save_path, str), "The save_path variable must be of type str"
         assert os.path.exists(save_path), "The save_path {} does not exist".format(save_path)
+
+        self.epochs = epochs
+        self.train_loss = train_loss
+        self.test_loss = test_loss
+        self.save_path = save_path
 
     """
     Plot the training loss curve.
     """
-    def plotTrainLoss(self):
-        plt.plot(self.epochs, self.loss)
+    def plotLoss(self):
+        plt.plot(self.epochs, self.train_loss, label="Train")
+        plt.plot(self.epochs, self.test_loss, label="Test")
         plt.xlabel("Epochs")
-        plt.ylabel("Train Loss")
+        plt.ylabel("Loss")
+        plt.legend()
 
         if self.save_path == "":
             plt.show()
@@ -104,10 +112,10 @@ def main():
     plot = ResultsPlotter(csv_path="results/MNIST_Pixel_VS.csv", metric="vs_pixel")
     plot.plot()
 
-    plot = ResultsPlotter(csv_path="results/MNIST_Embed_VS.csv", metric="vs_encoded")
-    plot.plot()
+    #plot = ResultsPlotter(csv_path="results/MNIST_Embed_VS.csv", metric="vs_encoded")
+    #plot.plot()
 
-    plot = ResultsPlotter(csv_path="results/MNIST_Embed_VS_Partial.csv", metric="vs_encoded")
+    plot = ResultsPlotter(csv_path="results/MNIST_Embed_VS_Full.csv", metric="vs_encoded")
     plot.plot()
 
 

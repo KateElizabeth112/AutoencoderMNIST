@@ -48,7 +48,8 @@ class Trainer:
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
 
         # create a container to store the train loss and associated epoch
-        loss_record = []
+        train_loss_record = []
+        test_loss_record = []
         epochs_record = []
 
         # Set frequency to save loss value and model
@@ -90,14 +91,8 @@ class Trainer:
                 # update running training loss
                 train_loss += loss.item() * images.size(0)
 
-            # print and save training statistics every n_steps
+            # print and save training/test statistics every n_steps
             if epoch % n_steps == 0:
-                train_loss = train_loss / len(self.train_loader)
-                print('Epoch: {} \tTraining Loss: {:.6f}'.format(
-                    epoch,
-                    train_loss
-                ))
-
                 # Checkpoint model
                 torch.save({
                     'epoch': epoch,
@@ -106,11 +101,39 @@ class Trainer:
                     'loss': train_loss,
                 }, self.model.save_path)
 
+                # calculate average training loss
+                train_loss = train_loss / len(self.train_loader)
+                print('Epoch: {} \tTraining Loss: {:.6f}'.format(
+                    epoch,
+                    train_loss
+                ))
+
+                # calculate test loss
+                test_loss = 0.0
+                for data in self.test_loader:
+                    # no need to flatten images
+                    images, _ = data
+                    # forward pass: compute predicted outputs by passing inputs to the model
+                    preds, images_compressed = self.model(images)
+                    # calculate the loss using only the first output from the network
+                    loss = criterion(preds, images)
+
+                    # update running training loss
+                    test_loss += loss.item() * images.size(0)
+
+                # Calculate the average test loss
+                test_loss = test_loss / len(self.test_loader)
+                print('Epoch: {} \tTest Loss: {:.6f}'.format(
+                    epoch,
+                    test_loss
+                ))
+
                 # store loss and epoch
                 epochs_record.append(epoch)
-                loss_record.append(train_loss)
+                train_loss_record.append(train_loss)
+                test_loss_record.append(test_loss)
 
-        return epochs_record, loss_record
+        return epochs_record, train_loss_record, test_loss_record
 
     # Load a saved model and run the evaluation data through it
     def eval(self, train=False, save_path=""):

@@ -14,10 +14,11 @@ class DiversityScore:
     Class for computing the diversity score for a dataset via a similarity matrix.
     """
 
-    def __init__(self, model, params, data):
+    def __init__(self, data, params, model=None):
         # check that the vectors parameter is a numpy array with two dimensions
         assert isinstance(params, TrainerParams), "params is not an instance of trainerParams"
-        assert isinstance(model, nn.Module), "model is not an instance of nn.Module"
+        if model is not None:
+            assert isinstance(model, nn.Module), "model is not an instance of nn.Module"
         assert isinstance(data, Dataset), "train_data is not an instance of Dataset"
 
         self.model = model
@@ -38,6 +39,9 @@ class DiversityScore:
         :return:
         vectors numpy.ndarray: 2D array of vector representations of each image.
         """
+        # check if a model has been passed
+        assert self.model is not None, "No model has been passed to the DiversityScore object"
+
         # load the model from the latest checkpoint
         checkpoint = torch.load(self.model.save_path)
 
