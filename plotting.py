@@ -11,23 +11,26 @@ class ResultsPlotter:
     :param metric: String specifying the metric to plot.
     :param csv_path: String path specifying then results CSV.
     """
-    def __init__(self, metric="", csv_path=""):
+    def __init__(self, metric="", experiment_name=""):
         # Check the types of the arguments are as expected
-        assert os.path.exists(csv_path), "Path {} to results CSV does not exist.".format(csv_path)
+        assert isinstance(experiment_name, str), "The experiment name must be a string"
+        assert os.path.exists(os.path.join("./results", experiment_name + ".csv")), "Path to results CSV does not exist."
         assert isinstance(metric, str), "Please specify the metric to be plotted, {}, as a string.".format(metric)
 
-        self.csv_path = csv_path
+        self.experiment_name = experiment_name
+        self.csv_path = os.path.join("./results", experiment_name + ".csv")
         self.metric = metric
 
-        # Run some checks on the value of metric
-        if metric == "vs_pixel":
-            self.plot_title = "MNIST Pixel Vendi Score"
-        elif metric == "vs_encoded":
-            self.plot_title = "MNIST Embed Vendi Score"
-        elif metric == "":
+        # Run some checks on the value of experimennt
+        if self.experiment_name not in ("MNIST_Embed_Inception", "MNIST_Embed_VS", "MNIST_Embed_VS_Full", "MNIST_Pixel_VS"):
+            raise ValueError("The experiment {} does not exist".format(self.experiment_name))
+
+        # Check the value of metric
+        if self.metric not in ("vs_pixel", "vs_encoded", ""):
+            raise ValueError("The metric {} for plotting is not recognised.".format(self.metric))
+        if self.metric == "":
             raise ValueError("Please set the metric to be plotted.")
-        else:
-            raise ValueError("The metric for plotting is not recognised.")
+
 
     """
     Method for plotting the given metric for each data category and training set size.
@@ -62,7 +65,7 @@ class ResultsPlotter:
             ax.plot(n_samples, values, label="{}".format(cat))
 
         ax.legend(title="Digit Label", loc='upper left', bbox_to_anchor=(1, 1))
-        ax.set_title(self.plot_title)
+        ax.set_title(self.experiment_name)
         ax.set_xticks(n_samples, n_samples)
         ax.set_xlabel("Dataset Size")
         ax.set_ylabel("Vendi Score")
@@ -109,13 +112,16 @@ class LossPlotter:
 
 
 def main():
-    plot = ResultsPlotter(csv_path="results/MNIST_Pixel_VS.csv", metric="vs_pixel")
-    plot.plot()
+    #plot = ResultsPlotter(csv_path="results/MNIST_Pixel_VS.csv", metric="vs_pixel")
+    #plot.plot()
 
     #plot = ResultsPlotter(csv_path="results/MNIST_Embed_VS.csv", metric="vs_encoded")
     #plot.plot()
 
-    plot = ResultsPlotter(csv_path="results/MNIST_Embed_VS_Full.csv", metric="vs_encoded")
+    #plot = ResultsPlotter(csv_path="results/MNIST_Embed_VS_Full.csv", metric="vs_encoded")
+    #plot.plot()
+
+    plot = ResultsPlotter(experiment_name="MNIST_Embed_Inception", metric="vs_encoded")
     plot.plot()
 
 

@@ -1,9 +1,13 @@
-import os
 import subprocess
+import warnings
+
+# Suppress all warnings
+warnings.filterwarnings('ignore')
 
 params_folder = "params"
-experiment_name = "MNIST_Pixel_VS"
-script_name = "VSPixel.py"
+experiment_name = "MNIST_Embed_Inception"
+script_name = "VSEmbedInception.py"
+
 
 def main():
     n_samples_list = [20, 100, 500, 1000, 5000]

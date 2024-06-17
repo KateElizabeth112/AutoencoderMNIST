@@ -4,7 +4,7 @@ import pickle as pkl
 import random
 
 params_folder = "params"
-experiment_name = "MNIST_Pixel_VS"
+experiment_name = "MNIST_Embed_Inception"
 
 
 def main():
@@ -51,6 +51,17 @@ def main():
                     "model_name": "autoencoderMNISTfull_339108.pt"
                 }
             elif experiment_name == "MNIST_Pixel_VS":
+                params = {
+                    "data_category": data_category,
+                    "n_samples": n_samples,
+                    "random_seed": seed,
+                    "n_layers": 0,
+                    "n_epochs": 0,
+                    "n_workers": 0,
+                    "batch_size": 20,
+                    "model_name": None
+                }
+            elif experiment_name == "MNIST_Embed_Inception":
                 params = {
                     "data_category": data_category,
                     "n_samples": n_samples,

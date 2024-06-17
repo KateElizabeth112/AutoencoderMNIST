@@ -1,12 +1,89 @@
 # code to handle diversity scoring of a dataset of vectors
 import numpy as np
 from vendi_score import vendi
-from vendi_score import image_utils
+from vendi_score import data_utils
 from trainers import TrainerParams
 import torch
 import torch.nn as nn
 from torch.utils.data.dataset import Dataset
 from copy import copy
+from torchvision import transforms
+from torchvision.models import inception_v3
+
+def get_inception(pretrained=True, pool=True):
+
+    model = inception_v3(pretrained=True, transform_input=True).eval()
+
+    if pool:
+        model.fc = nn.Identity()
+    return model
+
+
+def get_embeddings(
+    images,
+    model=None,
+    transform=None,
+    batch_size=64,
+    device=torch.device("cpu"),
+):
+    if type(device) == str:
+        device = torch.device(device)
+    if model is None:
+        model = get_inception(pretrained=True, pool=True).to(device)
+        transform = inception_transforms()
+    if transform is None:
+        transform = transforms.ToTensor()
+    uids = []
+    embeddings = []
+    for batch in data_utils.to_batches(images, batch_size):
+        x = torch.stack([transform(img) for img in batch], 0).to(device)
+        with torch.no_grad():
+            output = model(x)
+        if type(output) == list:
+            output = output[0]
+        embeddings.append(output.squeeze().cpu().numpy())
+    return np.concatenate(embeddings, 0)
+
+
+def inception_transforms():
+    return transforms.Compose(
+        [
+            transforms.Resize(299),
+            transforms.CenterCrop(299),
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: x.expand(3, -1, -1)),
+        ]
+    )
+
+
+def get_inception_embeddings(images, batch_size=64, device="cpu"):
+    if type(device) == str:
+        device = torch.device(device)
+    model = get_inception(pretrained=True, pool=True).to(device)
+    transform = inception_transforms()
+    return get_embeddings(
+        images,
+        batch_size=batch_size,
+        device=device,
+        model=model,
+        transform=transform,
+    )
+
+
+def embedding_vendi_score(
+    images, batch_size=64, device="cpu", model=None, transform=None
+):
+    X = get_embeddings(
+        images,
+        batch_size=batch_size,
+        device=device,
+        model=model,
+        transform=transform,
+    )
+    n, d = X.shape
+    if n < d:
+        return vendi.score_X(X)
+    return vendi.score_dual(X)
 
 
 class DiversityScore:
@@ -19,15 +96,15 @@ class DiversityScore:
         assert isinstance(params, TrainerParams), "params is not an instance of trainerParams"
         if model is not None:
             assert isinstance(model, nn.Module), "model is not an instance of nn.Module"
-        assert isinstance(data, Dataset), "train_data is not an instance of Dataset"
+        #assert isinstance(data, Dataset), "train_data is not an instance of Dataset"
 
         self.model = model
         self.params = params
         self.data = data
 
         # set up a data loader
-        self.data_loader = torch.utils.data.DataLoader(self.data, batch_size=self.params.batch_size,
-                                                       num_workers=self.params.num_workers)
+        #self.data_loader = torch.utils.data.DataLoader(self.data, batch_size=self.params.batch_size,
+        #                                               num_workers=self.params.num_workers)
 
     def __len__(self):
         return self.vectors.shape[0]
@@ -144,5 +221,11 @@ class DiversityScore:
         similarity_matrix = self.cosineSimilarity(vectors)
 
         score = vendi.score_K(similarity_matrix)
+
+        return score
+
+    def vendiScoreInception(self):
+
+        score = embedding_vendi_score(self.data)
 
         return score
