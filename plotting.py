@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import torch
+from torch.utils.data import Subset
+from torch.utils.data.dataset import Dataset
 
 
 class ResultsPlotter:
@@ -109,6 +112,61 @@ class LossPlotter:
             plt.show()
         else:
             plt.savefig(os.path.join(self.save_path, "loss.png"))
+
+
+class MNISTPlotter:
+    """
+    Class for plotting images from an MNIST-type dataset.
+    """
+    def __init__(self, dataset, save_path="", dataset_name=""):
+        # check the arguments
+        assert isinstance(dataset, Dataset), "dataset variable is not of type Dataset"
+        assert isinstance(save_path, str), "save_path must be a string"
+        assert os.path.exists(save_path), "save_path {} cannot be found".format(save_path)
+        assert isinstance(dataset_name, str), "dataset_name must be a string"
+
+        # assign variables
+        self.dataset = dataset
+        self.save_path = save_path
+        self.dataset_name = dataset_name
+
+    def plotDigit(self, digit):
+        # check we have a valid digit
+        assert isinstance(digit, int), "Digit must be an integer value"
+        assert digit in range(0, 10), "Digit must be in the range 0-9"
+
+        # Plot 25 images of a single digit
+        labels = self.dataset.targets.numpy()
+        index = np.where(labels == digit)[0]
+
+        # create a dataloader for examples with labels corresponding to the value of digit
+        dataloader = torch.utils.data.DataLoader(Subset(self.dataset, index), batch_size=5, num_workers=0)
+        dataiter = iter(dataloader)
+
+        # plot 25 images
+        fig, axes = plt.subplots(nrows=5, ncols=5, sharex=True, sharey=True)
+
+        for i in range(5):
+            images, labels = next(dataiter)
+            images = images.numpy()
+
+            for ax, img in zip(axes[i, :], images):
+                ax.imshow(np.squeeze(img), cmap='gray')
+                ax.get_xaxis().set_visible(False)
+                ax.get_yaxis().set_visible(False)
+
+        if self.dataset_name != "":
+            plt.title(self.dataset_name)
+
+        if self.save_path == "":
+            plt.show()
+        else:
+            plt.savefig(os.path.join(self.save_path, "digit_{}.png".format(digit)))
+
+    def plotAllDigits(self):
+        # plot 25 examples of each digit
+        for i in range(10):
+            self.plotDigit(i)
 
 
 def main():
