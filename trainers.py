@@ -38,8 +38,9 @@ class Trainer:
 
         # prepare data loaders
         self.train_loader = torch.utils.data.DataLoader(self.train_data, batch_size=self.params.batch_size,
-                                                        num_workers=self.params.num_workers)
-        self.test_loader = torch.utils.data.DataLoader(self.test_data, batch_size=self.params.batch_size, num_workers=self.params.num_workers)
+                                                        num_workers=self.params.num_workers, shuffle=True)
+        self.test_loader = torch.utils.data.DataLoader(self.test_data, batch_size=self.params.batch_size,
+                                                       num_workers=self.params.num_workers, shuffle=True)
 
     def train(self):
         """

@@ -2,6 +2,7 @@
 import numpy as np
 import torch
 import random
+import torchvision.transforms as transforms
 
 
 def generateSubsetIndex(data, category, n_samples, random_seed, train=True):
@@ -49,3 +50,14 @@ def generateSubsetIndex(data, category, n_samples, random_seed, train=True):
     assert subset_idx.shape[0] == n_samples, "The number of samples in the idx_sample array does not match n_samples"
 
     return subset_idx
+
+class RotationTransform:
+    """Rotate by one of the given angles."""
+
+    def __init__(self, angle):
+        self.angle = angle
+
+    def __call__(self, x):
+        x = transforms.functional.hflip(x)
+        x = transforms.functional.rotate(x, self.angle)
+        return x
