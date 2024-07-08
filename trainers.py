@@ -4,7 +4,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
 from torch.utils.data.dataset import Dataset
-from copy import copy
+from plotting import LossPlotter
 import os
 
 
@@ -146,6 +146,11 @@ class Trainer:
                 epochs_record.append(epoch)
                 train_loss_record.append(average_train_loss)
                 test_loss_record.append(average_test_loss)
+
+                # plot the loss
+                save_path = "./"
+                Plotter = LossPlotter(epochs_record, train_loss, test_loss, save_path=save_path)
+                Plotter.plotLoss()
 
         return epochs_record, train_loss_record, test_loss_record
 
