@@ -225,7 +225,17 @@ class DiversityScore:
         return score
 
     def vendiScoreInception(self):
+        """
+        Calculates diversity score using cosine distance of embeddings from pre-trained Inception model.
+        :return: diversity score
+        """
 
         score = embedding_vendi_score(self.data)
 
         return score
+
+    def diversityScore(self):
+        """
+        Runs all diversity scoring methods, returns a list.
+        :return:
+        """
