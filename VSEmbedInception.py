@@ -15,7 +15,7 @@ import numpy as np
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the Vendi score for a dataset from embeddings of an AE model")
-parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="MNIST_Embed_VS_Full")
+parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="MNIST_Embed_Inception")
 parser.add_argument("-p", "--params_file", type=str, help="Name of params file.", default="test_params.pkl")
 
 args = parser.parse_args()

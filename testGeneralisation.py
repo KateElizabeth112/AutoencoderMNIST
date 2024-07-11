@@ -14,7 +14,6 @@ from datasetUtils import generateSubsetIndex, RotationTransform
 import plotting
 import numpy as np
 
-
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the generalisation ability and diversity scores for a dataset")
 parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="GeneralisatonEqualCats")
@@ -22,12 +21,14 @@ parser.add_argument("-p", "--params_file", type=str, help="Name of params file."
 
 args = parser.parse_args()
 
-params_file_path = os.path.join("./params", args.experiment, args.params_file)
+root_dir = '/Users/katecevora/Documents/PhD/code/AutoencoderMNIST'
+params_file_path = os.path.join(root_dir, "params", args.experiment, args.params_file)
+models_path = os.path.join(root_dir, "models")
 
 dataset_root_mnist = '~/.pytorch/MNIST_data/'
 dataset_root_emnist = '/Users/katecevora/Documents/PhD/data'
-model_save_path = os.path.join(".venv/", "models")
-loss_plot_save_path = os.path.join(".venv/", "loss.png")
+model_save_path = os.path.join(root_dir, "models")
+loss_plot_save_path = os.path.join(root_dir , "loss.png")
 
 # number of test/valid dataset samples per category
 number_test_samples_per_cat = 500
@@ -43,33 +44,13 @@ mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
 mlflow.set_experiment(args.experiment)
 
 
-# dummy placeholder
-def scoreDiversity(data):
-    return [0, 0, 0, 0, 0]
-
-
-# DEBUG: use our own params file here
-unique_id = "999999"
-# generate  a params file
-params = {
-    "data_category": all,
-    "n_samples": 100,
-    "random_seed": 112,
-    "n_layers": 3,
-    "n_epochs": 100,
-    "n_workers": 0,
-    "batch_size": 20,
-    "model_name": "classifierMNIST_{}.pt".format(unique_id),
-    "dataset_name": "MNIST"
-}
-
 def main():
     # open a params file
-    #assert os.path.exists(params_file_path), "The path {} to the params file does not exist.".format(params_file_path)
+    assert os.path.exists(params_file_path), "The path {} to the params file does not exist.".format(params_file_path)
 
-    #f = open(params_file_path, "rb")
-    #params = pkl.load(f)
-    #f.close()
+    f = open(params_file_path, "rb")
+    params = pkl.load(f)
+    f.close()
 
     # check the params file
     assert isinstance(params, dict), f"Expected a dictionary, but got {type(params).__name__}"
@@ -82,10 +63,13 @@ def main():
     if dataset_name == "MNIST":
         train_data = datasets.MNIST(root=dataset_root_mnist, train=True, download=False, transform=transform_mnist)
         valid_data = datasets.MNIST(root=dataset_root_mnist, train=False, download=False, transform=transform_mnist)
-        test_data = datasets.EMNIST(root=dataset_root_emnist, split="digits", train=False, download=False, transform=transform_emnist)
+        test_data = datasets.EMNIST(root=dataset_root_emnist, split="digits", train=False, download=False,
+                                    transform=transform_emnist)
     else:
-        train_data = datasets.EMNIST(root=dataset_root_emnist, split="digits", train=False, download=False, transform=transform_emnist)
-        valid_data = datasets.EMNIST(root=dataset_root_emnist, split="digits", train=True, download=False, transform=transform_emnist)
+        train_data = datasets.EMNIST(root=dataset_root_emnist, split="digits", train=False, download=False,
+                                     transform=transform_emnist)
+        valid_data = datasets.EMNIST(root=dataset_root_emnist, split="digits", train=True, download=False,
+                                     transform=transform_emnist)
         test_data = datasets.MNIST(root=dataset_root_mnist, train=False, download=False, transform=transform_mnist)
 
     # generate a subset of indices corresponding to the dataset size per category
@@ -107,10 +91,23 @@ def main():
     valid_data = Subset(valid_data, idx_valid)
     test_data = Subset(test_data, idx_test)
 
+    # load the AE model that we will use to embed the data
+    model_ae = ConvAutoencoder(save_path=os.path.join(models_path, "autoencoderMNISTfull_339108.pt"))
+
+    trainer_params = TrainerParams(n_epochs=params["n_epochs"], num_workers=params["n_workers"],
+                                   batch_size=params["batch_size"])
+
     # diversity score all datasets
-    [vs_pixel_train, vs_embed_full_train, vs_embed_partial_train, vs_inception_train, entropy_train] = scoreDiversity(train_data)
-    [vs_pixel_test, vs_embed_full_test, vs_embed_partial_test, vs_inception_test, entropy_test] = scoreDiversity(test_data)
-    [vs_pixel_valid, vs_embed_full_valid, vs_embed_partial_valid, vs_inception_valid, entropy_valid] = scoreDiversity(valid_data)
+    ds_train = DiversityScore(train_data, trainer_params, model_ae)
+    ds_test = DiversityScore(test_data, trainer_params, model_ae)
+    ds_valid = DiversityScore(valid_data, trainer_params, model_ae)
+
+    [vs_pixel_train, vs_embed_full_train, vs_embed_partial_train, vs_inception_train,
+     entropy_train] = ds_train.scoreDiversity()
+    [vs_pixel_test, vs_embed_full_test, vs_embed_partial_test, vs_inception_test,
+     entropy_test] = ds_test.scoreDiversity()
+    [vs_pixel_valid, vs_embed_full_valid, vs_embed_partial_valid, vs_inception_valid,
+     entropy_valid] = ds_valid.scoreDiversity()
 
     # train the classifier and test the generalisation accuracy
     model = ImageClassifier(save_path=os.path.join(model_save_path, params["model_name"]))

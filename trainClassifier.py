@@ -93,11 +93,11 @@ def runInference():
 
 
 def main():
-    train()
-    runInference()
+    #train()
+    #runInference()
 
     # run with test data from a different dataset
-    # train_mnist = datasets.MNIST(root='~/.pytorch/MNIST_data/', train=True, download=False, transform=transform)
+    train_mnist = datasets.MNIST(root='~/.pytorch/MNIST_data/', train=True, download=False, transform=transform)
 
     # plotter = MNISTPlotter(train_mnist, save_path="/Users/katecevora/Documents/PhD/data/MNIST/images", dataset_name="MNIST")
     # plotter.plotAllDigits()

@@ -148,8 +148,7 @@ class Trainer:
                 test_loss_record.append(average_test_loss)
 
                 # plot the loss
-                save_path = "./"
-                Plotter = LossPlotter(epochs_record, train_loss, test_loss, save_path=save_path)
+                Plotter = LossPlotter(epochs_record, train_loss_record, test_loss_record, save_path="./")
                 Plotter.plotLoss()
 
         return epochs_record, train_loss_record, test_loss_record

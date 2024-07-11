@@ -9,6 +9,8 @@ from torch.utils.data.dataset import Dataset
 from copy import copy
 from torchvision import transforms
 from torchvision.models import inception_v3
+from scipy.stats import entropy
+from PIL import Image as im
 
 def get_inception(pretrained=True, pool=True):
 
@@ -96,15 +98,15 @@ class DiversityScore:
         assert isinstance(params, TrainerParams), "params is not an instance of trainerParams"
         if model is not None:
             assert isinstance(model, nn.Module), "model is not an instance of nn.Module"
-        #assert isinstance(data, Dataset), "train_data is not an instance of Dataset"
+        assert isinstance(data, Dataset), "train_data is not an instance of Dataset"
 
         self.model = model
         self.params = params
         self.data = data
 
         # set up a data loader
-        #self.data_loader = torch.utils.data.DataLoader(self.data, batch_size=self.params.batch_size,
-        #                                               num_workers=self.params.num_workers)
+        self.data_loader = torch.utils.data.DataLoader(self.data, batch_size=self.params.batch_size,
+                                                       num_workers=self.params.num_workers)
 
     def __len__(self):
         return self.vectors.shape[0]
@@ -157,7 +159,7 @@ class DiversityScore:
         for i, (images, labels) in enumerate(self.data_loader):
 
             # convert to a numpy array for easier handling after detaching gradient
-            image = images.numpy()
+            images = images.numpy()
 
             # flatten all dimensions except the first
             flattened_size = np.prod(images.shape[1:])
@@ -195,7 +197,7 @@ class DiversityScore:
 
         return similarity_matrix
 
-    def vendiScore(self):
+    def vendiScore(self, model="full"):
         """
         Calculates the vendi score from the similarity matrix. First checks if we have already computed or assigned
         a similarity matrix and generates one if necessary first.
@@ -229,13 +231,43 @@ class DiversityScore:
         Calculates diversity score using cosine distance of embeddings from pre-trained Inception model.
         :return: diversity score
         """
+        # convert the data back to PIL images so the embedding vendi score function can handle it
+        data = [im.fromarray(self.data[i][0].squeeze().numpy()) for i in range(len(self.data))]
 
-        score = embedding_vendi_score(self.data)
+        score = embedding_vendi_score(data)
 
         return score
 
-    def diversityScore(self):
+
+    def labelEntropy(self):
+        """
+        calculate the entropy of the labels in the dataset
+        :return:
+        """
+        # get the dataset labels
+        labels = np.array([self.data[i][1] for i in range(len(self.data))])
+
+        # convert the labels into a distribution
+        categories = np.unique(labels)
+        counts = np.zeros(categories.shape[0])
+
+        for i in range(len(categories)):
+            counts[i] = np.sum(labels == categories[i])
+
+        # calculate entropy from distribution over categorical labels
+        label_entropy = entropy(counts)
+
+        return label_entropy
+
+    def scoreDiversity(self):
         """
         Runs all diversity scoring methods, returns a list.
         :return:
         """
+        vs_pixel = self.vendiScorePixel()
+        vs_embed_full = self.vendiScore()
+        vs_embed_partial = self.vendiScore()
+        vs_inception = self.vendiScoreInception()
+        label_entropy = self.labelEntropy()
+
+        return [vs_pixel, vs_embed_full, vs_embed_partial, vs_inception, label_entropy]
