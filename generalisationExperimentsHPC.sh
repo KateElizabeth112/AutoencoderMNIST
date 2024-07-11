@@ -11,7 +11,7 @@ cd ${PBS_O_WORKDIR}
 module load anaconda3/personal
 
 # install requirements
-conda install --yes --file requirements.txt
+pip install -r requirements.txt
 
 # generate params files
 python generateParamsFiles.py -e "Generalisation_Fixed_Entropy" -r "/rds/general/user/kc2322/home"
