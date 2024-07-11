@@ -7,11 +7,13 @@ import argparse
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the Vendi score for a dataset from embeddings of an AE model")
 parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="Generalisation_Fixed_Entropy")
-parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code is located", default="/Users/katecevora/Documents/PhD/data")
+parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located", default="/Users/katecevora/Documents/PhD")
 
 args = parser.parse_args()
 
-params_folder = os.path.join(args.root_dir, "params")
+code_dir = os.path.join(args.root_dir, "AutoencoderMNIST/code")
+data_dir = os.path.join(args.root_dir, "AutoencoderMNIST/data")
+params_folder = os.path.join(code_dir, "params")
 experiment_name = args.experiment
 
 def main():
