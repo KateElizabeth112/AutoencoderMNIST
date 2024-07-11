@@ -11,8 +11,8 @@ parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the
 
 args = parser.parse_args()
 
-code_dir = os.path.join(args.root_dir, "AutoencoderMNIST/code")
-data_dir = os.path.join(args.root_dir, "AutoencoderMNIST/data")
+code_dir = os.path.join(args.root_dir, "code/AutoencoderMNIST")
+data_dir = os.path.join(args.root_dir, "data")
 params_folder = os.path.join(code_dir, "params")
 experiment_name = args.experiment
 
