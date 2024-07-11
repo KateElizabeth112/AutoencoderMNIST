@@ -2,10 +2,17 @@
 import os
 import pickle as pkl
 import random
+import argparse
 
-params_folder = "params"
-experiment_name = "Generalisation_Fixed_Entropy"
+# Set up the argument parser
+parser = argparse.ArgumentParser(description="Calculate the Vendi score for a dataset from embeddings of an AE model")
+parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="Generalisation_Fixed_Entropy")
+parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code is located", default="/Users/katecevora/Documents/PhD/data")
 
+args = parser.parse_args()
+
+params_folder = os.path.join(args.root_dir, "params")
+experiment_name = args.experiment
 
 def main():
     # check whether we already have a params folder, if not make one
