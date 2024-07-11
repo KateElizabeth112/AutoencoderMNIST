@@ -19,30 +19,33 @@ def main():
     n_samples_list = [20, 100, 500, 1000, 5000]
     data_category_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "all"]
     seed = 112
+    seeds = [112, 234, 23, 453, 21, 12, 6, 2, 67, 88]
 
     if experiment_name == "Generalisation_Fixed_Entropy":
         for n_samples in n_samples_list:
             data_category = "all"
-            params_name = "params_{}_{}_{}.pkl".format(data_category, n_samples, seed)
+            for s in seeds:
+                for dataset in ["MNIST", "EMNIST"]:
+                    params_name = "params_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset)
 
-            # generate a unique ID for the model
-            unique_id = ''.join(random.choices('0123456789', k=6))
+                    # generate a unique ID for the model
+                    unique_id = ''.join(random.choices('0123456789', k=6))
 
-            params = {
-                "data_category": data_category,
-                "n_samples": n_samples,
-                "random_seed": seed,
-                "n_layers": 3,
-                "n_epochs": 100,
-                "n_workers": 0,
-                "batch_size": 20,
-                "model_name": "classifierMNIST_{}.pt".format(unique_id),
-                "dataset_name": "MNIST"
-            }
+                    params = {
+                        "data_category": data_category,
+                        "n_samples": n_samples,
+                        "random_seed": seed,
+                        "n_layers": 3,
+                        "n_epochs": 100,
+                        "n_workers": 0,
+                        "batch_size": 20,
+                        "model_name": "classifierMNIST_{}.pt".format(unique_id),
+                        "dataset_name": dataset
+                    }
 
-            f = open(os.path.join(params_folder, experiment_name, params_name), "wb")
-            pkl.dump(params, f)
-            f.close()
+                    f = open(os.path.join(params_folder, experiment_name, params_name), "wb")
+                    pkl.dump(params, f)
+                    f.close()
 
     else:
         for n_samples in n_samples_list:
