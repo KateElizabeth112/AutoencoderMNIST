@@ -30,9 +30,6 @@ models_path = os.path.join(code_dir, "models")
 model_save_path = os.path.join(code_dir, "models")
 loss_plot_save_path = os.path.join(code_dir, "loss.png")
 
-dataset_root_mnist = '~/.pytorch/MNIST_data/'
-dataset_root_emnist = '/Users/katecevora/Documents/PhD/data'
-
 # number of test/valid dataset samples per category
 number_test_samples_per_cat = 500
 
@@ -64,16 +61,16 @@ def main():
     assert dataset_name in ["MNIST", "EMNIST"], "The dataset name {} is not recognised."
 
     if dataset_name == "MNIST":
-        train_data = datasets.MNIST(root=dataset_root_mnist, train=True, download=False, transform=transform_mnist)
-        valid_data = datasets.MNIST(root=dataset_root_mnist, train=False, download=False, transform=transform_mnist)
-        test_data = datasets.EMNIST(root=dataset_root_emnist, split="digits", train=False, download=False,
+        train_data = datasets.MNIST(root=data_dir, train=True, download=True, transform=transform_mnist)
+        valid_data = datasets.MNIST(root=data_dir, train=False, download=True, transform=transform_mnist)
+        test_data = datasets.EMNIST(root=data_dir, split="digits", train=False, download=False,
                                     transform=transform_emnist)
     else:
-        train_data = datasets.EMNIST(root=dataset_root_emnist, split="digits", train=False, download=False,
+        train_data = datasets.EMNIST(root=data_dir, split="digits", train=False, download=False,
                                      transform=transform_emnist)
-        valid_data = datasets.EMNIST(root=dataset_root_emnist, split="digits", train=True, download=False,
+        valid_data = datasets.EMNIST(root=data_dir, split="digits", train=True, download=False,
                                      transform=transform_emnist)
-        test_data = datasets.MNIST(root=dataset_root_mnist, train=False, download=False, transform=transform_mnist)
+        test_data = datasets.MNIST(root=data_dir, train=False, download=True, transform=transform_mnist)
 
     # generate a subset of indices corresponding to the dataset size per category
     idx_train = []
