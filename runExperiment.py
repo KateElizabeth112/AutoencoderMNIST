@@ -11,22 +11,27 @@ script_name = "testGeneralisation.py"
 
 def main():
     n_samples_list = [20, 100, 500, 1000, 5000]
-    #data_category_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "all"]
-    seed = 112
+    seeds = [112, 234, 23, 453, 21, 12, 6, 2, 67, 88]
 
     for n_samples in n_samples_list:
-        data_category = "all"
-        params_name = "params_{}_{}_{}.pkl".format(data_category, n_samples, seed)
+        for s in seeds:
+            for dataset in ["MNIST", "EMNIST"]:
+                data_category = "all"
+                params_name = "params_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset)
 
-        command = ["python", script_name, "-e", experiment_name, "-p", params_name]
+                print(
+                    "Running experiment with configuration: category={0}, n_samples={1}, seed={2}, dataset={3}".format(
+                        data_category, n_samples, s, dataset))
 
-        # Run the command
-        result = subprocess.run(command, capture_output=True, text=True)
+                command = ["python", script_name, "-e", experiment_name, "-p", params_name]
 
-        # Print the results
-        print("Return code:", result.returncode)
-        print("Output:", result.stdout)
-        print("Error:", result.stderr)
+                # Run the command
+                result = subprocess.run(command, capture_output=True, text=True)
+
+                # Print the results
+                print("Return code:", result.returncode)
+                print("Output:", result.stdout)
+                print("Error:", result.stderr)
 
 
 if __name__ == "__main__":
