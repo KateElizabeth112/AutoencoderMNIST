@@ -1,12 +1,24 @@
 import subprocess
 import warnings
+import argparse
+import os
 
 # Suppress all warnings
 warnings.filterwarnings('ignore')
 
-params_folder = "params"
-experiment_name = "Generalisation_Fixed_Entropy"
-script_name = "testGeneralisation.py"
+# Set up the argument parser
+parser = argparse.ArgumentParser(description="Calculate the Vendi score for a dataset from embeddings of an AE model")
+parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="Generalisation_Fixed_Entropy")
+parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located", default="/Users/katecevora/Documents/PhD")
+parser.add_argument("-s", "--script_name", type=str, help="Name of the script to run the expermiment.", default="testGeneralisation.py")
+
+args = parser.parse_args()
+
+code_dir = os.path.join(args.root_dir, "AutoencoderMNIST/code")
+data_dir = os.path.join(args.root_dir, "AutoencoderMNIST/data")
+params_folder = os.path.join(code_dir, "params")
+experiment_name = args.experiment
+script_name = args.script_name
 
 
 def main():
@@ -23,7 +35,7 @@ def main():
                     "Running experiment with configuration: category={0}, n_samples={1}, seed={2}, dataset={3}".format(
                         data_category, n_samples, s, dataset))
 
-                command = ["python", script_name, "-e", experiment_name, "-p", params_name]
+                command = ["python", script_name, "-e", experiment_name, "-p", params_name, "-r", args.root_dir]
 
                 # Run the command
                 result = subprocess.run(command, capture_output=True, text=True)

@@ -18,17 +18,20 @@ import numpy as np
 parser = argparse.ArgumentParser(description="Calculate the generalisation ability and diversity scores for a dataset")
 parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="GeneralisatonEqualCats")
 parser.add_argument("-p", "--params_file", type=str, help="Name of params file.", default="test_params.pkl")
+parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located", default="/Users/katecevora/Documents/PhD")
 
 args = parser.parse_args()
 
-root_dir = '/Users/katecevora/Documents/PhD/code/AutoencoderMNIST'
-params_file_path = os.path.join(root_dir, "params", args.experiment, args.params_file)
-models_path = os.path.join(root_dir, "models")
+root_dir = args.root_dir
+code_dir = os.path.join(root_dir, "code/AutoencoderMNIST")
+data_dir = os.path.join(root_dir, "data")
+params_file_path = os.path.join(code_dir, "params", args.experiment, args.params_file)
+models_path = os.path.join(code_dir, "models")
+model_save_path = os.path.join(code_dir, "models")
+loss_plot_save_path = os.path.join(code_dir, "loss.png")
 
 dataset_root_mnist = '~/.pytorch/MNIST_data/'
 dataset_root_emnist = '/Users/katecevora/Documents/PhD/data'
-model_save_path = os.path.join(root_dir, "models")
-loss_plot_save_path = os.path.join(root_dir , "loss.png")
 
 # number of test/valid dataset samples per category
 number_test_samples_per_cat = 500
