@@ -38,7 +38,7 @@ transform_mnist = transforms.ToTensor()
 transform_emnist = transforms.Compose([transforms.ToTensor(), RotationTransform(-270)])
 
 # Set our tracking server uri for logging with MLFlow
-mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
+#mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
 
 # Create a new MLflow Experiment
 mlflow.set_experiment(args.experiment)
@@ -162,7 +162,7 @@ def main():
         mlflow.log_metric("valid_accuracy", valid_accuracy)
 
         # log the loss plot for the classification model
-        mlflow.log_artifact(loss_plot_save_path)
+        #mlflow.log_artifact(loss_plot_save_path)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ import argparse
 import os
 
 # Suppress all warnings
-warnings.filterwarnings('ignore')
+#warnings.filterwarnings('ignore')
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the Vendi score for a dataset from embeddings of an AE model")
