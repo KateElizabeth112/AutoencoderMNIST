@@ -14,6 +14,7 @@ class TrainerParams:
         self.num_workers = num_workers
         self.batch_size = batch_size
 
+
 class Trainer:
     """
     Trainer class for an Autoencoder or classifier model. Takes a model, parameters and train and test data.
@@ -27,10 +28,16 @@ class Trainer:
         assert isinstance(model_type, str), "model_type must be a string"
 
         # Run some checks on the value of model type
-        if model_type not in ("AE", "classifier"):
+        if model_type not in ("AE", "classifier", "binary_classifier"):
             raise ValueError("The model type {} does not exist".format(self.experiment_name))
 
-        self.model = model
+        # Check if we have a GPU
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        else:
+            self.device = torch.device('cpu')
+
+        self.model = model.to(self.device)
         self.params = params
         self.train_data = train_data
         self.test_data = test_data
@@ -41,6 +48,8 @@ class Trainer:
                                                         num_workers=self.params.num_workers, shuffle=True)
         self.test_loader = torch.utils.data.DataLoader(self.test_data, batch_size=self.params.batch_size,
                                                        num_workers=self.params.num_workers, shuffle=True)
+
+        print("Finished trainer initialisation. Training on {}".format(self.device))
 
     def train(self):
         """
@@ -53,6 +62,10 @@ class Trainer:
             loss_function = nn.MSELoss()
         elif self.model_type == "classifier":
             loss_function = nn.CrossEntropyLoss(reduction="mean")
+        elif self.model_type == "binary_classifier":
+            loss_function = nn.BCELoss(reduction="mean")
+        else:
+            raise Exception
 
         # specify loss function
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
@@ -85,20 +98,29 @@ class Trainer:
             # train the model #
             ###################
             for images, labels in self.train_loader:
+                # Make sure the images and labels are on the right type of device (cuda or cpu)
+                images = images.to(self.device)
+                labels = labels.to(self.device)
+
                 # clear the gradients of all optimized variables
                 optimizer.zero_grad()
+
                 # forward pass: compute predicted outputs by passing inputs to the model
                 preds, images_compressed = self.model(images)
+
                 # calculate the loss using only the first output from the network
                 # loss_function returns average loss across batch
                 if self.model_type == "AE":
                     loss = loss_function(preds, images)
-                elif self.model_type == "classifier":
+                elif self.model_type in ["classifier", "binary_classifier"]:
                     loss = loss_function(preds, labels)
+
                 # backward pass: compute gradient of the loss with respect to model parameters
                 loss.backward()
+
                 # perform a single optimization step (parameter update)
                 optimizer.step()
+
                 # update running training loss
                 # Scale it by the size of the batch since loss_function returned batch average
                 total_train_loss += loss.item() * images.size(0)
@@ -124,8 +146,13 @@ class Trainer:
                 # calculate test loss
                 total_test_loss = 0.0
                 for images, labels in self.test_loader:
+                    # Make sure the images and labels are on the right type of device (cuda or cpu)
+                    images = images.to(self.device)
+                    labels = labels.to(self.device)
+
                     # forward pass: compute predicted outputs by passing inputs to the model
                     preds, images_compressed = self.model(images)
+
                     # calculate the loss using only the first output from the network
                     if self.model_type == "AE":
                         loss = loss_function(preds, images)
@@ -181,6 +208,10 @@ class Trainer:
             dataiter = iter(self.test_loader)
         images, labels = next(dataiter)
 
+        # Make sure the images and labels are on the right type of device (cuda or cpu)
+        images = images.to(self.device)
+        labels = labels.to(self.device)
+
         # get sample outputs
         preds, images_compressed = self.model(images)
         # prep images for display
@@ -212,11 +243,19 @@ class Inference:
     Inference class for a trained model (autoencoder or classifer).
     """
     def __init__(self, model, test_data, model_type="AE"):
-        self.model = model
+        # Check if we have a GPU
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        else:
+            self.device = torch.device('cpu')
+
+        self.model = model.to(self.device)
         self.test_data = test_data
         self.model_type = model_type
 
         self.test_loader = torch.utils.data.DataLoader(self.test_data, batch_size=10, num_workers=0)
+
+        print("Running inference on {}".format(self.device))
 
     def eval(self):
         """
@@ -237,6 +276,9 @@ class Inference:
         labels_all = []
 
         for images, labels in self.test_loader:
+            # Make sure the images and labels are on the right type of device (cuda or cpu)
+            images = images.to(self.device)
+            labels = labels.to(self.device)
 
             preds, _ = self.model(images)
 
