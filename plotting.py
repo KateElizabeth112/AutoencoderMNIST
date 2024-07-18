@@ -7,6 +7,8 @@ import torch
 from torch.utils.data import Subset
 from torch.utils.data.dataset import Dataset
 
+lblu = "#add9f4"
+lred = "#f36860"
 
 class ResultsPlotter:
     """
@@ -167,6 +169,47 @@ class MNISTPlotter:
         # plot 25 examples of each digit
         for i in range(10):
             self.plotDigit(i)
+
+
+class GeneralisationPlotter:
+    """
+    Class for plotting results of generalisation experiments.
+    """
+    def __init__(self, experiment_name=""):
+        # Check the types of the arguments are as expected
+        assert isinstance(experiment_name, str), "The experiment name must be a string"
+        assert os.path.exists(os.path.join("./results", experiment_name + ".csv")), "Path to results CSV does not exist."
+
+        self.experiment_name = experiment_name
+        self.csv_path = os.path.join("./results", experiment_name + ".csv")
+
+        # Run some checks on the value of experimennt
+        if self.experiment_name not in ("Generalisation_Fixed_Entropy"):
+            raise ValueError("The experiment {} does not exist".format(self.experiment_name))
+
+    def plotResults(self):
+        results = pd.read_csv(self.csv_path)
+
+        diversity_scores = ["vs_embed_full_train", "vs_entropy_train", "vs_pixel_train", "vs_inception_train", "n_samples"]
+        plot_titles = ["Vendi Score (AE Embedding)", "Label Entropy", "Vendi Score (Raw Pixel)", "Vendi Score (Inception Embedding)", "Number of samples"]
+
+        fig, axes = plt.subplots(nrows=3, ncols=2, sharey=True)
+
+        for c, ds in zip([lred, lblu], ["MNIST", "EMNIST"]):
+            valid_accuracy = results["valid_accuracy"][results["dataset_name"] == ds].values
+            test_accuracy = results["test_accuracy"][results["dataset_name"] == ds].values
+
+            generalisation_gap = test_accuracy - valid_accuracy / (0.5 * (test_accuracy + valid_accuracy))
+
+            for i in range(5):
+                ax = axes.flat[i]
+                scores = results[diversity_scores[i]][results["dataset_name"] == ds].values
+                ax.scatter(scores, generalisation_gap, color=c, label=ds)
+                ax.legend()
+                ax.set_xlabel(plot_titles[i])
+                #ax.get_xaxis().set_visible(False)
+        plt.tight_layout()
+        plt.show()
 
 
 def main():
