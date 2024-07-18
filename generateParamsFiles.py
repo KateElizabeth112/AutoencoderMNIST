@@ -43,11 +43,11 @@ def main():
                     params = {
                         "data_category": data_category,
                         "n_samples": n_samples,
-                        "random_seed": seed,
+                        "random_seed": s,
                         "n_layers": 3,
                         "n_epochs": 100,
                         "n_workers": 0,
-                        "batch_size": 20,
+                        "batch_size": 100,
                         "model_name": "classifierMNIST_{}.pt".format(unique_id),
                         "dataset_name": dataset
                     }
