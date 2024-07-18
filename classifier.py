@@ -9,10 +9,11 @@ from torchvision import datasets, transforms
 
 # Define the image classifier model
 class ImageClassifier(nn.Module):
-    def __init__(self, save_path=""):
+    def __init__(self, save_path="", out_features=10):
         super(ImageClassifier, self).__init__()
 
         self.save_path = save_path
+        self.out_features = out_features
 
         self.conv_layers = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3),
@@ -24,7 +25,7 @@ class ImageClassifier(nn.Module):
         )
         self.fc_layers = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(64 * 22 * 22, 10)
+            nn.Linear(64 * 22 * 22, self.out_features)
         )
 
     def forward(self, x):

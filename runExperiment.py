@@ -1,10 +1,6 @@
 import subprocess
-import warnings
 import argparse
 import os
-
-# Suppress all warnings
-#warnings.filterwarnings('ignore')
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the Vendi score for a dataset from embeddings of an AE model")
@@ -22,7 +18,7 @@ script_name = args.script_name
 
 
 def main():
-    n_samples_list = [1000]
+    n_samples_list = [20]
     seeds = [112, 234, 23, 453, 21, 12, 6, 2, 67, 88]
 
     for n_samples in n_samples_list:
