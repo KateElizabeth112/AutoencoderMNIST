@@ -1,7 +1,7 @@
 #!/bin/bash
-#PBS -l walltime=36:00:00
+#PBS -l walltime=48:00:00
 #PBS -l select=1:ncpus=15:mem=80gb:ngpus=1:gpu_type=RTX6000
-#PBS -N generalisationExperiments_500
+#PBS -N generalisationExperiments_1000
 
 # bash script to run generalisation experiments on HPC
 
