@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser(description="Calculate the Vendi score for a da
 parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="Generalisation_Fixed_Entropy")
 parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located", default="/Users/katecevora/Documents/PhD")
 parser.add_argument("-s", "--script_name", type=str, help="Name of the script to run the expermiment.", default="testGeneralisation.py")
+parser.add_argument("-n", "--num_samples", type=int, help="Number of dataset samples per category to use", default=20)
 
 args = parser.parse_args()
 
@@ -18,7 +19,7 @@ script_name = args.script_name
 
 
 def main():
-    n_samples_list = [1000]
+    n_samples_list = [args.num_samples]
     seeds = [112, 234, 23, 453, 21, 12, 6, 2, 67, 88]
 
     for n_samples in n_samples_list:
