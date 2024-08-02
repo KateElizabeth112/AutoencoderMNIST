@@ -6,6 +6,7 @@ import os
 import torch
 from torch.utils.data import Subset
 from torch.utils.data.dataset import Dataset
+from scipy.stats import pearsonr
 
 lblu = "#add9f4"
 lred = "#f36860"
@@ -204,9 +205,13 @@ class GeneralisationPlotter:
             for i in range(5):
                 ax = axes.flat[i]
                 scores = results[diversity_scores[i]][results["dataset_name"] == ds].values
+
+                # calculate the correlation coefficient (returns an object)
+                result = pearsonr(scores, generalisation_gap)
+
                 ax.scatter(scores, generalisation_gap, color=c, label=ds)
                 ax.legend()
-                ax.set_xlabel(plot_titles[i])
+                ax.set_xlabel(plot_titles[i] + " {0:.2f}".format(result.statistic))
                 #ax.get_xaxis().set_visible(False)
         plt.tight_layout()
         plt.show()
