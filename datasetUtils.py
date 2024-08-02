@@ -3,6 +3,86 @@ import numpy as np
 import torch
 import random
 import torchvision.transforms as transforms
+from diversityScore import DiversityScore
+from trainers import TrainerParams
+from torch.utils.data import Subset
+
+
+def getSimilarSamples(data, n_samples, diversity=None):
+    assert diversity is not None, "Please select the order for the similarity ranking, high or low"
+    assert diversity in ["high", "low"], "Please choose either high or low for the similarity ranking order"
+
+    # create a diversity scoring object using the full dataset
+    trainer_params = TrainerParams(n_epochs=10, num_workers=0, batch_size=2)
+    ds = DiversityScore(data, trainer_params)
+
+    # get the similarity matrix for the whole dataset
+    vectors = ds.getPixelVectors()
+    sim_matrix = ds.cosineSimilarity(vectors)
+
+    # find average similarity for each sample
+    average_sim = np.mean(sim_matrix, axis=0)
+
+    # order the average similarity vector (smallest first) and find the first N samples
+    if diversity == "low":
+        index = np.flip(np.argsort(average_sim))[:n_samples]
+    elif diversity == "high":
+        index = np.argsort(average_sim)[:n_samples]
+
+    return index
+
+def generateSubsetIndexDiverse(data, category, n_samples, diversity="None"):
+    """
+    Generate an index of data samples to use that are maximally or minimally diverse
+    :param data:
+    :param category:
+    :param n_samples:
+    :param random_seed:
+    :return:
+    """
+    assert diversity is not None, "Please select the order for the similarity ranking, high or low"
+    assert diversity in ["high", "low"], "Please choose either high or low for the similarity ranking order"
+    assert isinstance(n_samples, int), "The number of samples must be an integer"
+
+    if category == "all":
+        subset_idx = getSimilarSamples(data, n_samples, diversity=diversity)
+
+    else:
+        assert isinstance(category, int), "The data category {} must be equal to the string \"all\" or an integer."
+        assert category <= 9, "The category value cannot be greater than 9."
+        assert category >= 0, "The category value cannot be less than 0"
+
+        # create a data loader
+        dataset_loader = torch.utils.data.DataLoader(data, batch_size=20, num_workers=0)
+
+        # iterate over the dataset to get the labels
+        labels = []
+        for _, label in dataset_loader:
+            labels += list(label.numpy())
+
+        # convert to numpy array
+        labels = np.array(labels)
+
+        # get an index of locations where the label is equal to the value of category
+        idx_cat = np.where(labels == category)[0]
+
+        # check that the number of samples is less than the number of datapoints in that category
+        assert n_samples <= idx_cat.shape[
+            0], "The number of samples ({}) must be less than the number of datapoints in the category ({})".format(
+            n_samples, idx_cat.shape[0])
+
+        # Create a subset of samples for a single category
+        data_cat = Subset(data, idx_cat)
+
+        # Find the most similar (or dissimilar) samples
+        idx_sim = getSimilarSamples(data_cat, n_samples, diversity=diversity)
+
+        # convert the within-category index to a full dataset index
+        subset_idx = idx_cat[idx_sim]
+
+    assert subset_idx.shape[0] == n_samples, "The number of samples in the idx_sample array does not match n_samples"
+
+    return subset_idx
 
 
 def generateSubsetIndex(data, category, n_samples, random_seed, train=True):
