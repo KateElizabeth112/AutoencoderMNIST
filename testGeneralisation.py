@@ -10,13 +10,13 @@ from torch.utils.data import Subset
 from torchvision import datasets
 from diversityScore import DiversityScore
 import pickle as pkl
-from datasetUtils import generateSubsetIndex, RotationTransform
+from datasetUtils import generateSubsetIndex, generateSubsetIndexDiverse, RotationTransform
 import plotting
 import numpy as np
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the generalisation ability and diversity scores for a dataset")
-parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="GeneralisatonEqualCats")
+parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="Generalisaton_Fixed_Entropy")
 parser.add_argument("-p", "--params_file", type=str, help="Name of params file.", default="test_params.pkl")
 parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located", default="/Users/katecevora/Documents/PhD")
 
@@ -25,7 +25,11 @@ args = parser.parse_args()
 root_dir = args.root_dir
 code_dir = os.path.join(root_dir, "code/AutoencoderMNIST")
 data_dir = os.path.join(root_dir, "data")
-params_file_path = os.path.join(code_dir, "params", args.experiment, args.params_file)
+experiment_name = args.experiment
+
+assert experiment_name in ["Generalisation_Fixed_Entropy", "GeneralisationMinMaxDiversity"], "Experiment name is not recognised"
+
+params_file_path = os.path.join(code_dir, "params", experiment_name, args.params_file)
 models_path = os.path.join(code_dir, "models")
 model_save_path = os.path.join(code_dir, "models")
 loss_plot_save_path = os.path.join(code_dir, "loss.png")
@@ -41,8 +45,13 @@ transform_emnist = transforms.Compose([transforms.ToTensor(), RotationTransform(
 #mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
 
 # Create a new MLflow Experiment
-mlflow.set_experiment(args.experiment)
+mlflow.set_experiment(experiment_name)
 
+
+def getDataSubsets(data, n_samples, diversity="high"):
+    subset_idx = generateSubsetIndexDiverse(data, "all", n_samples, diversity=diversity)
+
+    return Subset(data, subset_idx)
 
 def main():
     # open a params file
@@ -72,24 +81,38 @@ def main():
                                      transform=transform_emnist)
         test_data = datasets.MNIST(root=data_dir, train=False, download=False, transform=transform_mnist)
 
-    # generate a subset of indices corresponding to the dataset size per category
-    idx_train = []
-    idx_valid = []
-    idx_test = []
-    for j in range(10):
-        idx_train += list(generateSubsetIndex(train_data, j, params["n_samples"], params["random_seed"]))
-        idx_valid += list(generateSubsetIndex(valid_data, j, number_test_samples_per_cat, params["random_seed"]))
-        idx_test += list(generateSubsetIndex(test_data, j, number_test_samples_per_cat, params["random_seed"]))
+    if experiment_name == "Generalisation_Fixed_Entropy":
+        # generate a subset of indices corresponding to the dataset size per category
+        idx_train = []
+        idx_valid = []
+        idx_test = []
+        for j in range(10):
+            idx_train += list(generateSubsetIndex(train_data, j, params["n_samples"], params["random_seed"]))
+            idx_valid += list(generateSubsetIndex(valid_data, j, number_test_samples_per_cat, params["random_seed"]))
+            idx_test += list(generateSubsetIndex(test_data, j, number_test_samples_per_cat, params["random_seed"]))
 
-    # convert indices back to numpy
-    idx_train = np.array(idx_train)
-    idx_valid = np.array(idx_valid)
-    idx_test = np.array(idx_test)
+        # convert indices back to numpy
+        idx_train = np.array(idx_train)
+        idx_valid = np.array(idx_valid)
+        idx_test = np.array(idx_test)
 
-    # Take a subset from each dataset specified by the indices
-    train_data = Subset(train_data, idx_train)
-    valid_data = Subset(valid_data, idx_valid)
-    test_data = Subset(test_data, idx_test)
+        # Take a subset from each dataset specified by the indices
+        train_data = Subset(train_data, idx_train)
+        valid_data = Subset(valid_data, idx_valid)
+        test_data = Subset(test_data, idx_test)
+
+    elif experiment_name == "GeneralisationMinMaxDiversity":
+        # First randomly select a subset so that we don't have to compute a massive similarity matrix
+        idx_train = generateSubsetIndex(train_data, "all", params["n_samples"] * 5, params["random_seed"])
+        idx_valid = generateSubsetIndex(valid_data, "all", number_test_samples_per_cat * 10, params["random_seed"])
+        idx_test = generateSubsetIndex(test_data, "all", number_test_samples_per_cat * 10, params["random_seed"])
+
+        train_data = Subset(train_data, idx_train)
+        valid_data = Subset(valid_data, idx_valid)
+        test_data = Subset(test_data, idx_test)
+
+        # then choose maximally or minimally diverse samples from the training subset
+        train_data = getDataSubsets(train_data, params["n_samples"], diversity=params["diversity"])
 
     # load the AE model that we will use to embed the data
     model_ae = ConvAutoencoder(save_path=os.path.join(models_path, "autoencoderMNISTfull_339108.pt"))

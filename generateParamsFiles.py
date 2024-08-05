@@ -55,6 +55,33 @@ def main():
                     f = open(os.path.join(params_folder, experiment_name, params_name), "wb")
                     pkl.dump(params, f)
                     f.close()
+    elif experiment_name == "GeneralisationMinMaxDiversity":
+        for n_samples in n_samples_list:
+            data_category = "all"
+            for s in seeds:
+                for dataset in ["MNIST", "EMNIST"]:
+                    for diversity in ["high", "low"]:
+                        params_name = "params_{}_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset, diversity)
+
+                        # generate a unique ID for the model
+                        unique_id = ''.join(random.choices('0123456789', k=6))
+
+                        params = {
+                            "data_category": data_category,
+                            "n_samples": n_samples,
+                            "random_seed": s,
+                            "n_layers": 3,
+                            "n_epochs": 100,
+                            "n_workers": 0,
+                            "batch_size": 100,
+                            "model_name": "classifierMNIST_{}.pt".format(unique_id),
+                            "dataset_name": dataset,
+                            "diversity": diversity
+                        }
+
+                        f = open(os.path.join(params_folder, experiment_name, params_name), "wb")
+                        pkl.dump(params, f)
+                        f.close()
 
     else:
         for n_samples in n_samples_list:

@@ -26,21 +26,34 @@ def main():
         for s in seeds:
             for dataset in ["MNIST", "EMNIST"]:
                 data_category = "all"
-                params_name = "params_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset)
 
-                print(
-                    "Running experiment with configuration: category={0}, n_samples={1}, seed={2}, dataset={3}".format(
-                        data_category, n_samples, s, dataset))
+                if experiment_name == "Generalisation_Fixed_Entropy":
+                    params_name = "params_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset)
 
-                command = ["python", script_name, "-e", experiment_name, "-p", params_name, "-r", args.root_dir]
+                    print(
+                        "Running experiment with configuration: category={0}, n_samples={1}, seed={2}, dataset={3}".format(
+                            data_category, n_samples, s, dataset))
 
-                # Run the command
-                result = subprocess.run(command, capture_output=True, text=True)
+                    command = ["python", script_name, "-e", experiment_name, "-p", params_name, "-r", args.root_dir]
 
-                # Print the results
-                print("Return code:", result.returncode)
-                print("Output:", result.stdout)
-                print("Error:", result.stderr)
+                    # Run the command
+                    result = subprocess.run(command, capture_output=True, text=True)
+
+                elif experiment_name == "GeneralisationMinMaxDiversity":
+                    for diversity in ["high", "low"]:
+                        params_name = "params_{}_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset, diversity)
+
+
+                        print(
+                            "Running experiment with configuration: category={0}, n_samples={1}, seed={2}, dataset={3}".format(
+                                data_category, n_samples, s, dataset))
+
+                        command = ["python", script_name, "-e", experiment_name, "-p", params_name, "-r", args.root_dir]
+
+                        # Run the command
+                        result = subprocess.run(command, capture_output=True, text=True)
+
+
 
 
 if __name__ == "__main__":
