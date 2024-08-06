@@ -185,7 +185,7 @@ class GeneralisationPlotter:
         self.csv_path = os.path.join("./results", experiment_name + ".csv")
 
         # Run some checks on the value of experimennt
-        if self.experiment_name not in ("Generalisation_Fixed_Entropy"):
+        if self.experiment_name not in ("Generalisation_Fixed_Entropy", "GeneralisationMinMaxDiversity"):
             raise ValueError("The experiment {} does not exist".format(self.experiment_name))
 
     def plotResults(self):
@@ -227,8 +227,11 @@ def main():
     #plot = ResultsPlotter(csv_path="results/MNIST_Embed_VS_Full.csv", metric="vs_encoded")
     #plot.plot()
 
-    plot = ResultsPlotter(experiment_name="MNIST_Embed_Inception", metric="vs_encoded")
-    plot.plot()
+    #plot = ResultsPlotter(experiment_name="MNIST_Embed_Inception", metric="vs_encoded")
+    #plot.plot()
+
+    plotter = GeneralisationPlotter(experiment_name="GeneralisationMinMaxDiversity")
+    plotter.plotResults()
 
 
 if __name__ == "__main__":
