@@ -188,7 +188,7 @@ class GeneralisationPlotter:
         if self.experiment_name not in ("Generalisation_Fixed_Entropy", "GeneralisationMinMaxDiversity"):
             raise ValueError("The experiment {} does not exist".format(self.experiment_name))
 
-    def plotResults(self):
+    def plotGeneralisationGap(self):
         results = pd.read_csv(self.csv_path)
 
         diversity_scores = ["vs_embed_full_train", "vs_entropy_train", "vs_pixel_train", "vs_inception_train", "n_samples"]
@@ -216,6 +216,37 @@ class GeneralisationPlotter:
         plt.tight_layout()
         plt.show()
 
+    def plotAccuracy(self, dataset="Test"):
+        assert dataset in ["Test", "Validation"], "Please set dataset to either Test or Validation"
+        results = pd.read_csv(self.csv_path)
+
+        diversity_scores = ["vs_embed_full_train", "vs_entropy_train", "vs_pixel_train", "vs_inception_train",
+                            "n_samples"]
+        plot_titles = ["Vendi Score (AE Embedding)", "Label Entropy", "Vendi Score (Raw Pixel)",
+                       "Vendi Score (Inception Embedding)", "Number of samples"]
+
+        fig, axes = plt.subplots(nrows=3, ncols=2, sharey=True)
+
+        for c, ds in zip([lred, lblu], ["MNIST", "EMNIST"]):
+            if dataset == "Test":
+                accuracy = results["test_accuracy"][results["dataset_name"] == ds].values
+            elif dataset == "Validation":
+                accuracy = results["valid_accuracy"][results["dataset_name"] == ds].values
+
+            for i in range(5):
+                ax = axes.flat[i]
+                scores = results[diversity_scores[i]][results["dataset_name"] == ds].values
+
+                # calculate the correlation coefficient (returns an object)
+                result = pearsonr(scores, accuracy)
+
+                ax.scatter(scores, accuracy, color=c, label=ds + " {0:.2f}".format(result.statistic))
+                ax.legend()
+                ax.set_xlabel(plot_titles[i])
+                # ax.get_xaxis().set_visible(False)
+        plt.tight_layout()
+        plt.show()
+
 
 def main():
     #plot = ResultsPlotter(csv_path="results/MNIST_Pixel_VS.csv", metric="vs_pixel")
@@ -231,7 +262,8 @@ def main():
     #plot.plot()
 
     plotter = GeneralisationPlotter(experiment_name="GeneralisationMinMaxDiversity")
-    plotter.plotResults()
+    plotter.plotAccuracy(dataset="Test")
+    plotter.plotAccuracy(dataset="Validation")
 
 
 if __name__ == "__main__":
