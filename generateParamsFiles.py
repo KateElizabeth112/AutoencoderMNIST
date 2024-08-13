@@ -25,7 +25,7 @@ def main():
     if not os.path.exists(os.path.join(params_folder, experiment_name)):
         os.mkdir(os.path.join(params_folder, experiment_name))
 
-    n_samples_list = [20, 100, 500, 1000, 5000]
+    n_samples_list = [20, 100, 500, 1000, 2000, 5000]
     data_category_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "all"]
     seed = 112
     seeds = [112, 234, 23, 453, 21, 12, 6, 2, 67, 88]
