@@ -266,7 +266,7 @@ class DiversityScore:
         """
         vs_pixel = self.vendiScorePixel()
         vs_embed_full = self.vendiScore()
-        vs_embed_partial = self.vendiScore()
+        vs_embed_partial = vs_embed_full
         vs_inception = self.vendiScoreInception()
         label_entropy = self.labelEntropy()
 
