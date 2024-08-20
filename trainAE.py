@@ -8,6 +8,7 @@ from autoencoder2D import ConvAutoencoder
 from torchvision import datasets
 import matplotlib.pyplot as plt
 import random
+from medMNISTDataset import getMedNISTData
 
 
 dataset_root = '~/.pytorch/MNIST_data/'
@@ -21,10 +22,26 @@ mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
 # Create a new MLflow Experiment
 mlflow.set_experiment("trainAEFull")
 
+dataset = "MedNIST"
+
 
 def main():
-    # generate a unique ID for the model
-    unique_id = ''.join(random.choices('0123456789', k=6))
+
+    if dataset == "MNIST":
+        # generate a unique ID for the model
+        unique_id = ''.join(random.choices('0123456789', k=6))
+        model_name = "autoencoderMNISTfull_{}.pt".format(unique_id)
+
+        # load the training and test datasets
+        train_data = datasets.MNIST(root=dataset_root, train=True, download=False, transform=transform)
+        test_data = datasets.MNIST(root=dataset_root, train=False, download=False, transform=transform)
+
+    elif dataset == "MedNIST":
+        model_name = "autoencoderMedMNISTfull.pt"
+
+        train_data = getMedNISTData(split="train", task="pneumoniamnist")
+        test_data = getMedNISTData(split="val", task="pneumoniamnist")
+
     # generate  a params file
     params = {
         "data_category": all,
@@ -34,12 +51,8 @@ def main():
         "n_epochs": 100,
         "n_workers": 0,
         "batch_size": 20,
-        "model_name": "autoencoderMNISTfull_{}.pt".format(unique_id)
+        "model_name": model_name
     }
-
-    # load the training and test datasets
-    train_data = datasets.MNIST(root=dataset_root, train=True, download=False, transform=transform)
-    test_data = datasets.MNIST(root=dataset_root, train=False, download=False, transform=transform)
 
     model = ConvAutoencoder(save_path=os.path.join("./models", params["model_name"]))
 
@@ -47,7 +60,7 @@ def main():
 
     trainer = Trainer(model, trainer_params, train_data, test_data)
 
-    train_epochs, train_loss = trainer.train()
+    train_epochs, train_loss, test_loss = trainer.train()
 
     # plot
     plt.plot(train_epochs, train_loss)
@@ -59,7 +72,6 @@ def main():
     with mlflow.start_run():
         # Log the hyperparameters
         mlflow.log_params(params)
-
         mlflow.log_artifact("loss.png")
 
 
