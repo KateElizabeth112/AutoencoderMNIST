@@ -25,7 +25,7 @@ def main():
     if not os.path.exists(os.path.join(params_folder, experiment_name)):
         os.mkdir(os.path.join(params_folder, experiment_name))
 
-    n_samples_list = [20, 100, 500, 1000, 2000, 5000]
+    n_samples_list = [20, 100, 200, 500, 1000, 2000, 5000]
     data_category_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "all"]
     seed = 112
     seeds = [112, 234, 23, 453, 21, 12, 6, 2, 67, 88]
@@ -59,7 +59,7 @@ def main():
         for n_samples in n_samples_list:
             data_category = "all"
             for s in seeds:
-                for dataset in ["MNIST", "EMNIST"]:
+                for dataset in ["MNIST", "EMNIST", "PneuNIST"]:
                     for diversity in ["high", "low"]:
                         params_name = "params_{}_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset, diversity)
 
@@ -99,7 +99,7 @@ def main():
             "batch_size": 20,
             "model_name": "classifierMedNIST_{}.pt".format(unique_id),
             "dataset_name": "PneuNIST",
-            "diversity": "high"
+            "diversity": "low"
 
         }
 
