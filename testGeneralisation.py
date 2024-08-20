@@ -13,10 +13,11 @@ import pickle as pkl
 from datasetUtils import generateSubsetIndex, generateSubsetIndexDiverse, RotationTransform
 import plotting
 import numpy as np
+from medMNISTDataset import getMedNISTData
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the generalisation ability and diversity scores for a dataset")
-parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="Generalisaton_Fixed_Entropy")
+parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="GeneralisationMinMaxDiversity")
 parser.add_argument("-p", "--params_file", type=str, help="Name of params file.", default="test_params.pkl")
 parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located", default="/Users/katecevora/Documents/PhD")
 
@@ -67,19 +68,33 @@ def main():
     # check what dataset we are using and load the data
     dataset_name = params["dataset_name"]
     assert isinstance(dataset_name, str), "Dataset name must be a string."
-    assert dataset_name in ["MNIST", "EMNIST"], "The dataset name {} is not recognised."
+    assert dataset_name in ["MNIST", "EMNIST", "PneuNIST"], "The dataset name {} is not recognised."
 
     if dataset_name == "MNIST":
         train_data = datasets.MNIST(root=data_dir, train=True, download=False, transform=transform_mnist)
         valid_data = datasets.MNIST(root=data_dir, train=False, download=False, transform=transform_mnist)
         test_data = datasets.EMNIST(root=data_dir, split="digits", train=False, download=False,
                                     transform=transform_emnist)
-    else:
+        out_features = 10
+
+        ae_model_name = "autoencoderMNISTfull_339108.pt"
+
+    elif dataset_name == "EMNIST":
         train_data = datasets.EMNIST(root=data_dir, split="digits", train=False, download=False,
                                      transform=transform_emnist)
         valid_data = datasets.EMNIST(root=data_dir, split="digits", train=True, download=False,
                                      transform=transform_emnist)
         test_data = datasets.MNIST(root=data_dir, train=False, download=False, transform=transform_mnist)
+
+        out_features = 10
+        ae_model_name = "autoencoderMNISTfull_339108.pt"
+
+    elif dataset_name == "PneuNIST":
+        train_data = getMedNISTData(split="train", task="pneumoniamnist")
+        valid_data = getMedNISTData(split="val", task="pneumoniamnist")
+        test_data = getMedNISTData(split="test", task="pneumoniamnist")
+        out_features = 2
+        ae_model_name = "autoencoderMedMNISTfull.pt"
 
     if experiment_name == "Generalisation_Fixed_Entropy":
         # generate a subset of indices corresponding to the dataset size per category
@@ -102,10 +117,17 @@ def main():
         test_data = Subset(test_data, idx_test)
 
     elif experiment_name == "GeneralisationMinMaxDiversity":
+        if len(train_data) < params["n_samples"] * 5:
+            print("Warning: train data has {0} samples not {1}".format(len(train_data), params["n_samples"] * 5))
+        if len(valid_data) < number_test_samples_per_cat * 10:
+            print("Warning: validation data has {0} samples not {1}".format(len(valid_data), number_test_samples_per_cat * 10))
+        if len(test_data) < number_test_samples_per_cat * 10:
+            print("Warning: test data has {0} samples not {1}".format(len(test_data), number_test_samples_per_cat * 10))
+
         # First randomly select a subset so that we don't have to compute a massive similarity matrix
-        idx_train = generateSubsetIndex(train_data, "all", params["n_samples"] * 5, params["random_seed"])
-        idx_valid = generateSubsetIndex(valid_data, "all", number_test_samples_per_cat * 10, params["random_seed"])
-        idx_test = generateSubsetIndex(test_data, "all", number_test_samples_per_cat * 10, params["random_seed"])
+        idx_train = generateSubsetIndex(train_data, "all", min(params["n_samples"] * 5, len(train_data)), params["random_seed"])
+        idx_valid = generateSubsetIndex(valid_data, "all", min(number_test_samples_per_cat * 10, len(valid_data)), params["random_seed"])
+        idx_test = generateSubsetIndex(test_data, "all", min(number_test_samples_per_cat * 10, len(test_data)), params["random_seed"])
 
         train_data = Subset(train_data, idx_train)
         valid_data = Subset(valid_data, idx_valid)
@@ -115,7 +137,7 @@ def main():
         train_data = getDataSubsets(train_data, params["n_samples"], diversity=params["diversity"])
 
     # load the AE model that we will use to embed the data
-    model_ae = ConvAutoencoder(save_path=os.path.join(models_path, "autoencoderMNISTfull_339108.pt"))
+    model_ae = ConvAutoencoder(save_path=os.path.join(models_path, ae_model_name))
 
     trainer_params = TrainerParams(n_epochs=params["n_epochs"], num_workers=params["n_workers"],
                                    batch_size=params["batch_size"])
@@ -133,7 +155,7 @@ def main():
      entropy_valid] = ds_valid.scoreDiversity()
 
     # train the classifier and test the generalisation accuracy
-    model = ImageClassifier(save_path=os.path.join(model_save_path, params["model_name"]))
+    model = ImageClassifier(save_path=os.path.join(model_save_path, params["model_name"]), out_features=out_features)
 
     trainer_params = TrainerParams(n_epochs=params["n_epochs"], num_workers=params["n_workers"],
                                    batch_size=params["batch_size"])
