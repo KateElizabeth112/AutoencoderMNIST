@@ -6,7 +6,7 @@ import argparse
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the Vendi score for a dataset from embeddings of an AE model")
-parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="Generalisation_Fixed_Entropy")
+parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="Test")
 parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located", default="/Users/katecevora/Documents/PhD")
 
 args = parser.parse_args()
@@ -83,6 +83,26 @@ def main():
                         pkl.dump(params, f)
                         f.close()
 
+    elif experiment_name == "Test":
+        params_name = "test_params.pkl"
+
+        # generate a unique ID for the model
+        unique_id = ''.join(random.choices('0123456789', k=6))
+
+        params = {
+            "data_category": "all",
+            "n_samples": 200,
+            "random_seed": 21,
+            "n_layers": 3,
+            "n_epochs": 150,
+            "n_workers": 0,
+            "batch_size": 20,
+            "model_name": "classifierMedNIST_{}.pt".format(unique_id)
+        }
+
+        f = open(os.path.join(params_folder, "GeneralisationMinMaxDiversity", params_name), "wb")
+        pkl.dump(params, f)
+        f.close()
     else:
         for n_samples in n_samples_list:
             for data_category in data_category_list:
