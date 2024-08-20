@@ -97,7 +97,10 @@ def main():
             "n_epochs": 150,
             "n_workers": 0,
             "batch_size": 20,
-            "model_name": "classifierMedNIST_{}.pt".format(unique_id)
+            "model_name": "classifierMedNIST_{}.pt".format(unique_id),
+            "dataset_name": "PneuNIST",
+            "diversity": "high"
+
         }
 
         f = open(os.path.join(params_folder, "GeneralisationMinMaxDiversity", params_name), "wb")
