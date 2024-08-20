@@ -8,6 +8,7 @@ parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment
 parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located", default="/Users/katecevora/Documents/PhD")
 parser.add_argument("-s", "--script_name", type=str, help="Name of the script to run the expermiment.", default="testGeneralisation.py")
 parser.add_argument("-n", "--num_samples", type=int, help="Number of dataset samples per category to use", default=20)
+parser.add_argument("-d", "--dataset", type=str, help="Dataset which we will use to run experiments", default="MNIST")
 
 args = parser.parse_args()
 
@@ -16,6 +17,7 @@ data_dir = os.path.join(args.root_dir, "data")
 params_folder = os.path.join(code_dir, "params")
 experiment_name = args.experiment
 script_name = args.script_name
+dataset = args.dataset
 
 
 def main():
@@ -24,11 +26,24 @@ def main():
 
     for n_samples in n_samples_list:
         for s in seeds:
-            for dataset in ["MNIST", "EMNIST"]:
-                data_category = "all"
+            data_category = "all"
 
-                if experiment_name == "Generalisation_Fixed_Entropy":
-                    params_name = "params_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset)
+            if experiment_name == "Generalisation_Fixed_Entropy":
+                params_name = "params_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset)
+
+                print(
+                    "Running experiment with configuration: category={0}, n_samples={1}, seed={2}, dataset={3}".format(
+                        data_category, n_samples, s, dataset))
+
+                command = ["python", script_name, "-e", experiment_name, "-p", params_name, "-r", args.root_dir]
+
+                # Run the command
+                result = subprocess.run(command, capture_output=True, text=True)
+
+            elif experiment_name == "GeneralisationMinMaxDiversity":
+                for diversity in ["high", "low"]:
+                    params_name = "params_{}_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset, diversity)
+
 
                     print(
                         "Running experiment with configuration: category={0}, n_samples={1}, seed={2}, dataset={3}".format(
@@ -38,20 +53,6 @@ def main():
 
                     # Run the command
                     result = subprocess.run(command, capture_output=True, text=True)
-
-                elif experiment_name == "GeneralisationMinMaxDiversity":
-                    for diversity in ["high", "low"]:
-                        params_name = "params_{}_{}_{}_{}_{}.pkl".format(data_category, n_samples, s, dataset, diversity)
-
-
-                        print(
-                            "Running experiment with configuration: category={0}, n_samples={1}, seed={2}, dataset={3}".format(
-                                data_category, n_samples, s, dataset))
-
-                        command = ["python", script_name, "-e", experiment_name, "-p", params_name, "-r", args.root_dir]
-
-                        # Run the command
-                        result = subprocess.run(command, capture_output=True, text=True)
 
 
 

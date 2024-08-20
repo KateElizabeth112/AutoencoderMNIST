@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -l walltime=48:00:00
 #PBS -l select=1:ncpus=15:mem=80gb:ngpus=1:gpu_type=RTX6000
-#PBS -N minMaxDiversity_2000
+#PBS -N minMaxDiversity_MedNIST_200
 
 # bash script to run generalisation experiments on HPC
 
@@ -19,4 +19,4 @@ python generateParamsFiles.py -e "GeneralisationMinMaxDiversity" -r "/rds/genera
 
 # run experiments
 #python runExperiment.py  -e "Generalisation_Fixed_Entropy" -r "/rds/general/user/kc2322/home" -s "testGeneralisation.py" -n 500
-python runExperiment.py  -e "GeneralisationMinMaxDiversity" -r "/rds/general/user/kc2322/home" -s "testGeneralisation.py" -n 2000
+python runExperiment.py  -e "GeneralisationMinMaxDiversity" -r "/rds/general/user/kc2322/home" -s "testGeneralisation.py" -n 200 -d "PneuNIST"
