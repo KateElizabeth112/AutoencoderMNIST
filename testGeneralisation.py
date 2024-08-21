@@ -70,6 +70,8 @@ def main():
     assert isinstance(dataset_name, str), "Dataset name must be a string."
     assert dataset_name in ["MNIST", "EMNIST", "PneuNIST"], "The dataset name {} is not recognised."
 
+    print("Starting TestGeneralisation {0} experiment with {1} dataset".format(experiment_name, dataset_name))
+
     if dataset_name == "MNIST":
         train_data = datasets.MNIST(root=data_dir, train=True, download=False, transform=transform_mnist)
         valid_data = datasets.MNIST(root=data_dir, train=False, download=False, transform=transform_mnist)

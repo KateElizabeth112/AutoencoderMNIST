@@ -46,14 +46,15 @@ def main():
 
 
                     print(
-                        "Running experiment with configuration: category={0}, n_samples={1}, seed={2}, dataset={3}".format(
-                            data_category, n_samples, s, dataset))
+                        "Running {4} experiment with configuration: category={0}, n_samples={1}, seed={2}, dataset={3}".format(
+                            data_category, n_samples, s, dataset, experiment_name))
 
                     command = ["python", script_name, "-e", experiment_name, "-p", params_name, "-r", args.root_dir]
 
                     # Run the command
                     result = subprocess.run(command, capture_output=True, text=True)
-
+                    print(result.stdout)
+                    print(result.stderr)
 
 
 
