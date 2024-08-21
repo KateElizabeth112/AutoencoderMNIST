@@ -13,7 +13,7 @@ import pickle as pkl
 from datasetUtils import generateSubsetIndex, generateSubsetIndexDiverse, RotationTransform
 import plotting
 import numpy as np
-from medMNISTDataset import getMedNISTData
+from medMNISTDataset import MedNISTDataset
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the generalisation ability and diversity scores for a dataset")
@@ -90,9 +90,10 @@ def main():
         ae_model_name = "autoencoderMNISTfull_339108.pt"
 
     elif dataset_name == "PneuNIST":
-        train_data = getMedNISTData(split="train", task="pneumoniamnist")
-        valid_data = getMedNISTData(split="val", task="pneumoniamnist")
-        test_data = getMedNISTData(split="test", task="pneumoniamnist")
+        print("Getting data for {}".format(dataset_name))
+        train_data = MedNISTDataset(data_dir, split="train", task="pneumoniamnist")
+        valid_data = MedNISTDataset(data_dir, split="val", task="pneumoniamnist")
+        test_data = MedNISTDataset(data_dir, split="test", task="pneumoniamnist")
         out_features = 2
         ae_model_name = "autoencoderMedMNISTfull.pt"
 
