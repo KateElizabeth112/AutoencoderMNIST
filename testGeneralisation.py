@@ -96,6 +96,8 @@ def main():
         out_features = 2
         ae_model_name = "autoencoderMedMNISTfull.pt"
 
+    print("Finished loading data.")
+
     if experiment_name == "Generalisation_Fixed_Entropy":
         # generate a subset of indices corresponding to the dataset size per category
         idx_train = []
@@ -136,6 +138,8 @@ def main():
         # then choose maximally or minimally diverse samples from the training subset
         train_data = getDataSubsets(train_data, params["n_samples"], diversity=params["diversity"])
 
+    print("Finished sampling data.")
+
     # load the AE model that we will use to embed the data
     model_ae = ConvAutoencoder(save_path=os.path.join(models_path, ae_model_name))
 
@@ -170,6 +174,8 @@ def main():
 
     inferencer = Inference(model, test_data, model_type="classifier")
     test_accuracy = inferencer.eval()
+
+    print("Finished experiment.")
 
     # record everything in MLFlow
     with mlflow.start_run():
