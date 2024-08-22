@@ -183,6 +183,7 @@ def main():
     # record everything in MLFlow
     with mlflow.start_run():
         # Log the hyperparameters
+        print("Starting mlflow logging")
         mlflow.log_params(params)
 
         # Log the diversity metrics
@@ -217,6 +218,8 @@ def main():
 
         # log the loss plot for the classification model
         #mlflow.log_artifact(loss_plot_save_path)
+
+    print("Finished mlflow logging.")
 
 
 if __name__ == "__main__":
