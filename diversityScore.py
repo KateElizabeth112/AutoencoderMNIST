@@ -1,91 +1,13 @@
 # code to handle diversity scoring of a dataset of vectors
 import numpy as np
-from vendi_score import vendi
-from vendi_score import data_utils
+import vendiScore
 from trainers import TrainerParams
 import torch
 import torch.nn as nn
 from torch.utils.data.dataset import Dataset
 from copy import copy
-from torchvision import transforms
-from torchvision.models import inception_v3
 from scipy.stats import entropy
 from PIL import Image as im
-
-def get_inception(pretrained=True, pool=True):
-
-    model = inception_v3(pretrained=True, transform_input=True).eval()
-
-    if pool:
-        model.fc = nn.Identity()
-    return model
-
-
-def get_embeddings(
-    images,
-    model=None,
-    transform=None,
-    batch_size=64,
-    device=torch.device("cpu"),
-):
-    if type(device) == str:
-        device = torch.device(device)
-    if model is None:
-        model = get_inception(pretrained=True, pool=True).to(device)
-        transform = inception_transforms()
-    if transform is None:
-        transform = transforms.ToTensor()
-    uids = []
-    embeddings = []
-    for batch in data_utils.to_batches(images, batch_size):
-        x = torch.stack([transform(img) for img in batch], 0).to(device)
-        with torch.no_grad():
-            output = model(x)
-        if type(output) == list:
-            output = output[0]
-        embeddings.append(output.squeeze().cpu().numpy())
-    return np.concatenate(embeddings, 0)
-
-
-def inception_transforms():
-    return transforms.Compose(
-        [
-            transforms.Resize(299),
-            transforms.CenterCrop(299),
-            transforms.ToTensor(),
-            transforms.Lambda(lambda x: x.expand(3, -1, -1)),
-        ]
-    )
-
-
-def get_inception_embeddings(images, batch_size=64, device="cpu"):
-    if type(device) == str:
-        device = torch.device(device)
-    model = get_inception(pretrained=True, pool=True).to(device)
-    transform = inception_transforms()
-    return get_embeddings(
-        images,
-        batch_size=batch_size,
-        device=device,
-        model=model,
-        transform=transform,
-    )
-
-
-def embedding_vendi_score(
-    images, batch_size=64, device="cpu", model=None, transform=None
-):
-    X = get_embeddings(
-        images,
-        batch_size=batch_size,
-        device=device,
-        model=model,
-        transform=transform,
-    )
-    n, d = X.shape
-    if n < d:
-        return vendi.score_X(X)
-    return vendi.score_dual(X)
 
 
 class DiversityScore:
@@ -197,47 +119,29 @@ class DiversityScore:
 
         return similarity_matrix
 
-    def vendiScore(self, model="full"):
-        """
-        Calculates the vendi score from the similarity matrix. First checks if we have already computed or assigned
-        a similarity matrix and generates one if necessary first.
-        :return:
-        float: The Vendi score for the dataset
-        """
-        embeddings = self.getEmbeddings()
-
-        similarity_matrix = self.cosineSimilarity(embeddings)
-
-        score = vendi.score_K(similarity_matrix)
-
-        return score
-
-    def vendiScorePixel(self):
+    def vendiScore(self, embed="pixel"):
         """
         Calculates the Vendi score directly from the cosine similarity matrix of pixel values.
         :return:
         float: The Vendi score for the dataset
         """
-        vectors = self.getPixelVectors()
+        if embed == "pixel":
+            vectors = self.getPixelVectors()
+        elif embed == "auto":
+            vectors = self.getEmbeddings()
+        elif embed == "inception":
+            data = [im.fromarray(self.data[i][0].squeeze().numpy()) for i in range(len(self.data))]
+            vectors = vendiScore.getInceptionEmbeddings(data)
 
         similarity_matrix = self.cosineSimilarity(vectors)
 
-        score = vendi.score_K(similarity_matrix)
+        score = vendiScore.score_K(similarity_matrix)
 
-        return score
+        intdiv = vendiScore.intdiv_K(similarity_matrix)
 
-    def vendiScoreInception(self):
-        """
-        Calculates diversity score using cosine distance of embeddings from pre-trained Inception model.
-        :return: diversity score
-        """
-        # convert the data back to PIL images so the embedding vendi score function can handle it
-        data = [im.fromarray(self.data[i][0].squeeze().numpy()) for i in range(len(self.data))]
+        av_sim = np.mean(similarity_matrix)
 
-        score = embedding_vendi_score(data)
-
-        return score
-
+        return score, av_sim, intdiv
 
     def labelEntropy(self):
         """
@@ -261,13 +165,17 @@ class DiversityScore:
 
     def scoreDiversity(self):
         """
-        Runs all diversity scoring methods, returns a list.
+        Runs all diversity scoring methods, returns a dictionary of results.
         :return:
         """
-        vs_pixel = self.vendiScorePixel()
-        vs_embed_full = self.vendiScore()
-        vs_embed_partial = vs_embed_full
-        vs_inception = self.vendiScoreInception()
-        label_entropy = self.labelEntropy()
+        # Store the results in a dictionary
+        results = {}
+        for embedding in ["pixel", "auto", "inception"]:
+            vs, av_sim, intdiv = self.vendiScore(embed=embedding)
+            results["vs_{}".format(embedding)] = vs
+            results["av_sim_{}".format(embedding)] = av_sim
+            results["intdiv_{}".format(embedding)] = intdiv
 
-        return [vs_pixel, vs_embed_full, vs_embed_partial, vs_inception, label_entropy]
+        results["label_entropy"] = self.labelEntropy()
+
+        return results

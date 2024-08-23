@@ -43,7 +43,7 @@ transform_mnist = transforms.ToTensor()
 transform_emnist = transforms.Compose([transforms.ToTensor(), RotationTransform(-270)])
 
 # Set our tracking server uri for logging with MLFlow
-#mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
+mlflow.set_tracking_uri(uri="http://127.0.0.1:8080")
 
 # Create a new MLflow Experiment
 mlflow.set_experiment(experiment_name)
@@ -154,12 +154,9 @@ def main():
     ds_test = DiversityScore(test_data, trainer_params, model_ae)
     ds_valid = DiversityScore(valid_data, trainer_params, model_ae)
 
-    [vs_pixel_train, vs_embed_full_train, vs_embed_partial_train, vs_inception_train,
-     entropy_train] = ds_train.scoreDiversity()
-    [vs_pixel_test, vs_embed_full_test, vs_embed_partial_test, vs_inception_test,
-     entropy_test] = ds_test.scoreDiversity()
-    [vs_pixel_valid, vs_embed_full_valid, vs_embed_partial_valid, vs_inception_valid,
-     entropy_valid] = ds_valid.scoreDiversity()
+    train_scores = ds_train.scoreDiversity()
+    test_scores = ds_test.scoreDiversity()
+    valid_scores = ds_valid.scoreDiversity()
 
     # train the classifier and test the generalisation accuracy
     model = ImageClassifier(save_path=os.path.join(model_save_path, params["model_name"]), out_features=out_features)
@@ -187,30 +184,13 @@ def main():
         mlflow.log_params(params)
 
         # Log the diversity metrics
-        # Pixel Vendi score
-        mlflow.log_metric("vs_pixel_train", vs_pixel_train)
-        mlflow.log_metric("vs_pixel_valid", vs_pixel_valid)
-        mlflow.log_metric("vs_pixel_test", vs_pixel_test)
+        for (ds, scores) in zip(["train", "test", "valid"], [train_scores, test_scores, valid_scores]):
+            for s in ["vs", "av_sim", "intdiv"]:
+                mlflow.log_metric("{0}_pixel_{1}".format(s, ds), scores["{}_pixel".format(s)])
+                mlflow.log_metric("{0}_embed_full_{1}".format(s, ds), scores["{}_auto".format(s)])
+                mlflow.log_metric("{0}_inception_{1}".format(s, ds), scores["{}_inception".format(s)])
 
-        # Vendi score with embeddings from full dataset
-        mlflow.log_metric("vs_embed_full_train", vs_embed_full_train)
-        mlflow.log_metric("vs_embed_full_valid", vs_embed_full_valid)
-        mlflow.log_metric("vs_embed_full_test", vs_embed_full_test)
-
-        # Vendi score with embeddings from partial dataset
-        mlflow.log_metric("vs_embed_partial_train", vs_embed_partial_train)
-        mlflow.log_metric("vs_embed_partial_valid", vs_embed_partial_valid)
-        mlflow.log_metric("vs_embed_partial_test", vs_embed_partial_test)
-
-        # Vendi score with embeddings from inception
-        mlflow.log_metric("vs_inception_train", vs_inception_train)
-        mlflow.log_metric("vs_inception_valid", vs_inception_valid)
-        mlflow.log_metric("vs_inception_test", vs_inception_test)
-
-        # Label entropy diversity score
-        mlflow.log_metric("vs_entropy_train", entropy_train)
-        mlflow.log_metric("vs_entropy_valid", entropy_valid)
-        mlflow.log_metric("vs_entropy_test", entropy_test)
+            mlflow.log_metric("vs_entropy_{}".format(ds), scores["label_entropy"])
 
         # log the generalisation accuracy
         mlflow.log_metric("test_accuracy", test_accuracy)
