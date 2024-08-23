@@ -189,10 +189,17 @@ class GeneralisationPlotter:
         if self.experiment_name not in ("Generalisation_Fixed_Entropy", "GeneralisationMinMaxDiversity"):
             raise ValueError("The experiment {} does not exist".format(self.experiment_name))
 
-    def plotAccuracy(self, metric="test_accuracy"):
+    def plotAccuracy(self, metric="test_accuracy", dataset=""):
         assert metric in ["test_accuracy", "valid_accuracy", "generalisation_gap"], \
             "Please set the plotting metric to either 'test_accuracy' or 'valid_accuracy' or 'generalisation_gap'"
+
+        assert isinstance(dataset, list), "Please specify the dataset/s within a list"
+
         results = pd.read_csv(self.csv_path)
+
+        # Check that the specified dataset/s are present in the results file
+        for ds in dataset:
+            assert ds in list(np.unique(results["dataset_name"].values)), "Dataset {} not found in results".format(ds)
 
         diversity_scores = ["vs_embed_full_train", "vs_entropy_train", "vs_pixel_train", "vs_inception_train",
                             "n_samples"]
@@ -201,7 +208,19 @@ class GeneralisationPlotter:
 
         fig, axes = plt.subplots(nrows=3, ncols=2, sharey=True)
 
-        for c, ds in zip([lred, lblu, lgrn], ["MNIST", "EMNIST", "PneuNIST"]):
+        # list of colours to use for plotting different datasets
+        colours_list = [lred, lblu, lgrn]
+
+        # if a dataset was not specified, get a list of datasets from the results
+        if dataset == "":
+            dataset_names = list(np.unique(results["dataset_name"].values))
+        else:
+            dataset_names = list(dataset)
+
+        num_datasets = len(dataset_names)
+        colours = colours_list[:num_datasets]
+
+        for c, ds in zip(colours, dataset_names):
             if metric in ["test_accuracy", "valid_accuracy"]:
                 accuracy = results[metric][results["dataset_name"] == ds].values
             elif metric == "generalisation_gap":
@@ -221,7 +240,6 @@ class GeneralisationPlotter:
                 ax.scatter(scores, accuracy, color=c, label=ds + " {0:.2f} ({1:.2f})".format(result.statistic, result.pvalue))
                 ax.legend()
                 ax.set_xlabel(plot_titles[i])
-                # ax.get_xaxis().set_visible(False)
         plt.tight_layout()
         plt.show()
 
@@ -240,7 +258,7 @@ def main():
     #plot.plot()
 
     plotter = GeneralisationPlotter(experiment_name="GeneralisationMinMaxDiversity")
-    plotter.plotAccuracy(metric="test_accuracy")
+    plotter.plotAccuracy(metric="test_accuracy", dataset=["PneuNIST", "MNIST"])
 
 
 if __name__ == "__main__":
