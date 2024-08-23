@@ -10,6 +10,7 @@ from scipy.stats import pearsonr
 
 lblu = "#add9f4"
 lred = "#f36860"
+lgrn = "#7dda7e"
 
 class ResultsPlotter:
     """
@@ -188,36 +189,9 @@ class GeneralisationPlotter:
         if self.experiment_name not in ("Generalisation_Fixed_Entropy", "GeneralisationMinMaxDiversity"):
             raise ValueError("The experiment {} does not exist".format(self.experiment_name))
 
-    def plotGeneralisationGap(self):
-        results = pd.read_csv(self.csv_path)
-
-        diversity_scores = ["vs_embed_full_train", "vs_entropy_train", "vs_pixel_train", "vs_inception_train", "n_samples"]
-        plot_titles = ["Vendi Score (AE Embedding)", "Label Entropy", "Vendi Score (Raw Pixel)", "Vendi Score (Inception Embedding)", "Number of samples"]
-
-        fig, axes = plt.subplots(nrows=3, ncols=2, sharey=True)
-
-        for c, ds in zip([lred, lblu], ["MNIST", "EMNIST"]):
-            valid_accuracy = results["valid_accuracy"][results["dataset_name"] == ds].values
-            test_accuracy = results["test_accuracy"][results["dataset_name"] == ds].values
-
-            generalisation_gap = test_accuracy - valid_accuracy / (0.5 * (test_accuracy + valid_accuracy))
-
-            for i in range(5):
-                ax = axes.flat[i]
-                scores = results[diversity_scores[i]][results["dataset_name"] == ds].values
-
-                # calculate the correlation coefficient (returns an object)
-                result = pearsonr(scores, generalisation_gap)
-
-                ax.scatter(scores, generalisation_gap, color=c, label=ds)
-                ax.legend()
-                ax.set_xlabel(plot_titles[i] + " {0:.2f}".format(result.statistic))
-                #ax.get_xaxis().set_visible(False)
-        plt.tight_layout()
-        plt.show()
-
-    def plotAccuracy(self, dataset="Test"):
-        assert dataset in ["Test", "Validation"], "Please set dataset to either Test or Validation"
+    def plotAccuracy(self, metric="test_accuracy"):
+        assert metric in ["test_accuracy", "valid_accuracy", "generalisation_gap"], \
+            "Please set the plotting metric to either 'test_accuracy' or 'valid_accuracy' or 'generalisation_gap'"
         results = pd.read_csv(self.csv_path)
 
         diversity_scores = ["vs_embed_full_train", "vs_entropy_train", "vs_pixel_train", "vs_inception_train",
@@ -227,11 +201,15 @@ class GeneralisationPlotter:
 
         fig, axes = plt.subplots(nrows=3, ncols=2, sharey=True)
 
-        for c, ds in zip([lred, lblu], ["MNIST", "EMNIST"]):
-            if dataset == "Test":
-                accuracy = results["test_accuracy"][results["dataset_name"] == ds].values
-            elif dataset == "Validation":
-                accuracy = results["valid_accuracy"][results["dataset_name"] == ds].values
+        for c, ds in zip([lred, lblu, lgrn], ["MNIST", "EMNIST", "PneuNIST"]):
+            if metric in ["test_accuracy", "valid_accuracy"]:
+                accuracy = results[metric][results["dataset_name"] == ds].values
+            elif metric == "generalisation_gap":
+                valid_accuracy = results["valid_accuracy"][results["dataset_name"] == ds].values
+                test_accuracy = results["test_accuracy"][results["dataset_name"] == ds].values
+                accuracy = test_accuracy - valid_accuracy / (0.5 * (test_accuracy + valid_accuracy))
+            else:
+                print("Metric {} not recognised".format(metric))
 
             for i in range(5):
                 ax = axes.flat[i]
@@ -240,7 +218,7 @@ class GeneralisationPlotter:
                 # calculate the correlation coefficient (returns an object)
                 result = pearsonr(scores, accuracy)
 
-                ax.scatter(scores, accuracy, color=c, label=ds + " {0:.2f}".format(result.statistic))
+                ax.scatter(scores, accuracy, color=c, label=ds + " {0:.2f} ({1:.2f})".format(result.statistic, result.pvalue))
                 ax.legend()
                 ax.set_xlabel(plot_titles[i])
                 # ax.get_xaxis().set_visible(False)
@@ -262,8 +240,7 @@ def main():
     #plot.plot()
 
     plotter = GeneralisationPlotter(experiment_name="GeneralisationMinMaxDiversity")
-    plotter.plotAccuracy(dataset="Test")
-    plotter.plotAccuracy(dataset="Validation")
+    plotter.plotAccuracy(metric="test_accuracy")
 
 
 if __name__ == "__main__":
