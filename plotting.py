@@ -201,12 +201,26 @@ class GeneralisationPlotter:
         for ds in dataset:
             assert ds in list(np.unique(results["dataset_name"].values)), "Dataset {} not found in results".format(ds)
 
-        diversity_scores = ["vs_embed_full_train", "vs_entropy_train", "vs_pixel_train", "vs_inception_train",
-                            "n_samples"]
-        plot_titles = ["Vendi Score (AE Embedding)", "Label Entropy", "Vendi Score (Raw Pixel)",
-                       "Vendi Score (Inception Embedding)", "Number of samples"]
+        score_titles = ["VS", "Av. Sim.", "IntDiv"]
+        scores = ["vs", "av_sim", "intdiv"]
+        embed_titles = [" (Raw Pixel)", " (Autoencoder)", " (Inception)"]
+        embed = ["pixel", "embed_full", "inception"]
 
-        fig, axes = plt.subplots(nrows=3, ncols=2, sharey=True)
+        plot_titles = []
+        diversity_scores = []
+
+        for k in range(3):
+            for j in range(3):
+                plot_titles.append(score_titles[j] + embed_titles[k])
+                diversity_scores.append("{0}_{1}_train".format(scores[j], embed[k]))
+
+        # Add number of samples and label entropy
+        plot_titles.append("Number of Samples")
+        plot_titles.append("Label Entropy")
+        diversity_scores.append("n_samples")
+        diversity_scores.append("vs_entropy_train")
+
+        fig, axes = plt.subplots(nrows=4, ncols=3, sharey=True)
 
         # list of colours to use for plotting different datasets
         colours_list = [lred, lblu, lgrn]
@@ -230,15 +244,24 @@ class GeneralisationPlotter:
             else:
                 print("Metric {} not recognised".format(metric))
 
-            for i in range(5):
+            for i in range(len(diversity_scores)):
                 ax = axes.flat[i]
-                scores = results[diversity_scores[i]][results["dataset_name"] == ds].values
+                print(diversity_scores[i])
+                diversity = results[diversity_scores[i]][results["dataset_name"] == ds].values
 
-                # calculate the correlation coefficient (returns an object)
-                result = pearsonr(scores, accuracy)
+                # Find out if we have any Nan values in scores (due to missing data)
+                nan_idx = np.isnan(diversity)
 
-                ax.scatter(scores, accuracy, color=c, label=ds + " {0:.2f} ({1:.2f})".format(result.statistic, result.pvalue))
-                ax.legend()
+                # filter out nan entries
+                diversity_nonan = diversity[np.invert(nan_idx)]
+                accuracy_nonnan = accuracy[np.invert(nan_idx)]
+
+                # Check whether we have any data for this metric
+                if diversity_nonan.shape[0] > 0:
+                    # calculate the correlation coefficient (returns an object)
+                    result = pearsonr(diversity_nonan, accuracy_nonnan)
+                    ax.scatter(diversity_nonan, accuracy_nonnan, color=c, label=ds + " {0:.2f} ({1:.2f})".format(result.statistic, result.pvalue))
+                    ax.legend()
                 ax.set_xlabel(plot_titles[i])
         plt.tight_layout()
         plt.show()
@@ -258,7 +281,7 @@ def main():
     #plot.plot()
 
     plotter = GeneralisationPlotter(experiment_name="GeneralisationMinMaxDiversity")
-    plotter.plotAccuracy(metric="test_accuracy", dataset=["PneuNIST", "MNIST"])
+    plotter.plotAccuracy(metric="test_accuracy", dataset=["MNIST", "EMNIST", "PneuNIST"])
 
 
 if __name__ == "__main__":
