@@ -6,7 +6,10 @@ import os
 import torch
 from torch.utils.data import Subset
 from torch.utils.data.dataset import Dataset
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, ConstantInputWarning
+import warnings
+
+warnings.simplefilter("ignore", ConstantInputWarning)
 
 lblu = "#add9f4"
 lred = "#f36860"
