@@ -216,9 +216,8 @@ class ResultsProcesser:
         self.diversity_scores = diversity_scores
         self.plot_titles = plot_titles
 
-
-    def plot(self, metric="test_accuracy", dataset=""):
-        assert metric in ["test_accuracy", "valid_accuracy", "generalisation_gap"], \
+    def plot(self, output="test_accuracy", dataset=""):
+        assert output in ["test_accuracy", "valid_accuracy", "generalisation_gap"], \
             "Please set the plotting metric to either 'test_accuracy' or 'valid_accuracy' or 'generalisation_gap'"
 
         assert isinstance(dataset, list), "Please specify the dataset/s within a list"
@@ -242,14 +241,14 @@ class ResultsProcesser:
         colours = colours_list[:num_datasets]
 
         for c, ds in zip(colours, dataset_names):
-            if metric in ["test_accuracy", "valid_accuracy"]:
-                accuracy = self.results[metric][self.results["dataset_name"] == ds].values
-            elif metric == "generalisation_gap":
+            if output in ["test_accuracy", "valid_accuracy"]:
+                accuracy = self.results[output][self.results["dataset_name"] == ds].values
+            elif output == "generalisation_gap":
                 valid_accuracy = self.results["valid_accuracy"][self.results["dataset_name"] == ds].values
                 test_accuracy = self.results["test_accuracy"][self.results["dataset_name"] == ds].values
                 accuracy = test_accuracy - valid_accuracy / (0.5 * (test_accuracy + valid_accuracy))
             else:
-                print("Metric {} not recognised".format(metric))
+                print("Metric {} not recognised".format(output))
 
             for i in range(len(self.diversity_scores)):
                 ax = axes.flat[i]
@@ -352,7 +351,7 @@ class ResultsProcesser:
 
 def main():
     plotter = ResultsProcesser(experiment_name="GeneralisationMinMaxDiversity")
-    #plotter.plotAccuracy(metric="test_accuracy", dataset=["MNIST", "EMNIST", "PneuNIST"])
+    plotter.plot(output="test_accuracy", dataset=["MNIST", "EMNIST", "PneuNIST"])
 
     plotter.printResults(output="test_accuracy")
 
