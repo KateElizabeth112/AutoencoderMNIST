@@ -173,7 +173,7 @@ class MNISTPlotter:
             self.plotDigit(i)
 
 
-class GeneralisationPlotter:
+class ResultsProcesser:
     """
     Class for plotting results of generalisation experiments.
     """
@@ -184,26 +184,16 @@ class GeneralisationPlotter:
 
         self.experiment_name = experiment_name
         self.csv_path = os.path.join("./results", experiment_name + ".csv")
+        self.results = pd.read_csv(self.csv_path)
 
         # Run some checks on the value of experimennt
         if self.experiment_name not in ("Generalisation_Fixed_Entropy", "GeneralisationMinMaxDiversity"):
             raise ValueError("The experiment {} does not exist".format(self.experiment_name))
 
-    def plotAccuracy(self, metric="test_accuracy", dataset=""):
-        assert metric in ["test_accuracy", "valid_accuracy", "generalisation_gap"], \
-            "Please set the plotting metric to either 'test_accuracy' or 'valid_accuracy' or 'generalisation_gap'"
-
-        assert isinstance(dataset, list), "Please specify the dataset/s within a list"
-
-        results = pd.read_csv(self.csv_path)
-
-        # Check that the specified dataset/s are present in the results file
-        for ds in dataset:
-            assert ds in list(np.unique(results["dataset_name"].values)), "Dataset {} not found in results".format(ds)
-
+        # create a list of diversity score metrics
         score_titles = ["VS", "Av. Sim.", "IntDiv"]
         scores = ["vs", "av_sim", "intdiv"]
-        embed_titles = [" (Raw Pixel)", " (Autoencoder)", " (Inception)"]
+        embed_titles = [" (Raw Pixel)", " (AE)", " (Inception)"]
         embed = ["pixel", "embed_full", "inception"]
 
         plot_titles = []
@@ -220,6 +210,20 @@ class GeneralisationPlotter:
         diversity_scores.append("n_samples")
         diversity_scores.append("vs_entropy_train")
 
+        self.diversity_scores = diversity_scores
+        self.plot_titles = plot_titles
+
+
+    def plot(self, metric="test_accuracy", dataset=""):
+        assert metric in ["test_accuracy", "valid_accuracy", "generalisation_gap"], \
+            "Please set the plotting metric to either 'test_accuracy' or 'valid_accuracy' or 'generalisation_gap'"
+
+        assert isinstance(dataset, list), "Please specify the dataset/s within a list"
+
+        # Check that the specified dataset/s are present in the results file
+        for ds in dataset:
+            assert ds in list(np.unique(self.results["dataset_name"].values)), "Dataset {} not found in results".format(ds)
+
         fig, axes = plt.subplots(nrows=4, ncols=3, sharey=True)
 
         # list of colours to use for plotting different datasets
@@ -227,7 +231,7 @@ class GeneralisationPlotter:
 
         # if a dataset was not specified, get a list of datasets from the results
         if dataset == "":
-            dataset_names = list(np.unique(results["dataset_name"].values))
+            dataset_names = list(np.unique(self.results["dataset_name"].values))
         else:
             dataset_names = list(dataset)
 
@@ -236,18 +240,18 @@ class GeneralisationPlotter:
 
         for c, ds in zip(colours, dataset_names):
             if metric in ["test_accuracy", "valid_accuracy"]:
-                accuracy = results[metric][results["dataset_name"] == ds].values
+                accuracy = self.results[metric][self.results["dataset_name"] == ds].values
             elif metric == "generalisation_gap":
-                valid_accuracy = results["valid_accuracy"][results["dataset_name"] == ds].values
-                test_accuracy = results["test_accuracy"][results["dataset_name"] == ds].values
+                valid_accuracy = self.results["valid_accuracy"][self.results["dataset_name"] == ds].values
+                test_accuracy = self.results["test_accuracy"][self.results["dataset_name"] == ds].values
                 accuracy = test_accuracy - valid_accuracy / (0.5 * (test_accuracy + valid_accuracy))
             else:
                 print("Metric {} not recognised".format(metric))
 
-            for i in range(len(diversity_scores)):
+            for i in range(len(self.diversity_scores)):
                 ax = axes.flat[i]
-                print(diversity_scores[i])
-                diversity = results[diversity_scores[i]][results["dataset_name"] == ds].values
+                print(self.diversity_scores[i])
+                diversity = self.results[self.diversity_scores[i]][self.results["dataset_name"] == ds].values
 
                 # Find out if we have any Nan values in scores (due to missing data)
                 nan_idx = np.isnan(diversity)
@@ -262,26 +266,92 @@ class GeneralisationPlotter:
                     result = pearsonr(diversity_nonan, accuracy_nonnan)
                     ax.scatter(diversity_nonan, accuracy_nonnan, color=c, label=ds + " {0:.2f} ({1:.2f})".format(result.statistic, result.pvalue))
                     ax.legend()
-                ax.set_xlabel(plot_titles[i])
+                ax.set_xlabel(self.plot_titles[i])
         plt.tight_layout()
         plt.show()
 
+    def __printCorrelation__(self, diversity, accuracy):
+        """
+        Helper function for calculating and printing the correlation between diversity scores and test accuracy.
+        :param diversity:
+        :param accuracy:
+        :return:
+        """
+        # filter out the nans
+        nan_idx = np.isnan(diversity)
+        diversity_nonan = diversity[np.invert(nan_idx)]
+        accuracy_nonnan = accuracy[np.invert(nan_idx)]
+
+        # calculate correlation coefficient if we have any data
+        if diversity_nonan.shape[0] > 0:
+            # calculate the correlation coefficient (returns an object)
+            corr = pearsonr(diversity_nonan, accuracy_nonnan)
+
+            if corr.pvalue < 0.05:
+                pval = "*"
+            elif corr.pvalue < 0.01:
+                pval = "**"
+            else:
+                pval = ""
+
+            print("& {0:.2f}{1} ".format(abs(corr.statistic), pval), end="")
+        else:
+            print("& ", end="")
+
+    def printResults(self, output="test_accuracy"):
+        """
+        Print a table of results in latex format and save to a text file if specified
+        :return:
+        """
+        assert output in ["test_accuracy", "valid_accuracy", "generalisation_gap"], \
+            "Please set the plotting metric to either 'test_accuracy' or 'valid_accuracy' or 'generalisation_gap'"
+
+        # Get the names of the datasets present in results. We will have a separate column for each dataset
+        dataset_names = np.unique(self.results["dataset_name"].values)
+
+        # print the first few lines of the latex table
+        print(r"\begin{tabular}{p{3.2cm}|p{0.6cm}p{0.6cm}p{0.6cm}p{0.6cm}|p{0.6cm}p{0.6cm}p{0.6cm}p{0.6cm}|p{0.6cm}p{0.6cm}p{0.6cm}p{0.6cm}|}")
+        print(r" &  \multicolumn{4}{|c|}{MNIST} & \multicolumn{4}{|c|}{EMNIST} &\multicolumn{4}{|c|}{PneuMNIST}\\")
+        print(r"\hline")
+        print(r"No. Samples & 500 & 1000 & 2000 & all & 500 & 1000 & 2000 & all & 200 & 500 & 1000 & all \\")
+        print(r"\hline")
+
+        # iterate over the diversity scoring metrics
+        for score, score_name in zip(self.diversity_scores, self.plot_titles):
+            print(score_name, end="")
+            # iterate over the datasets
+            for dataset_name in dataset_names:
+                # find the range of dataset sizes used for this dataset
+                n_samples = np.unique(self.results["n_samples"][self.results["dataset_name"] == dataset_name].values)
+
+                # iterate over the number of samples
+                for ns in n_samples:
+                    # filter the results by dataset, diversity metric and number of samples
+                    condition_1 = self.results["dataset_name"] == dataset_name
+                    condition_2 = self.results["n_samples"] == ns
+                    diversity = self.results[score][condition_1 & condition_2]
+                    accuracy = self.results[output][condition_1 & condition_2]
+
+                    self.__printCorrelation__(diversity, accuracy)
+
+                # Get a correlation value for all samples
+                condition_1 = self.results["dataset_name"] == dataset_name
+                diversity = self.results[score][condition_1]
+                accuracy = self.results[output][condition_1]
+
+                self.__printCorrelation__(diversity, accuracy)
+
+                print("", end="")
+            print("\\\\")
+
+        # print the last part of the table in latex
+        print(r"\end{tabular}")
 
 def main():
-    #plot = ResultsPlotter(csv_path="results/MNIST_Pixel_VS.csv", metric="vs_pixel")
-    #plot.plot()
+    plotter = ResultsProcesser(experiment_name="GeneralisationMinMaxDiversity")
+    #plotter.plotAccuracy(metric="test_accuracy", dataset=["MNIST", "EMNIST", "PneuNIST"])
 
-    #plot = ResultsPlotter(csv_path="results/MNIST_Embed_VS.csv", metric="vs_encoded")
-    #plot.plot()
-
-    #plot = ResultsPlotter(csv_path="results/MNIST_Embed_VS_Full.csv", metric="vs_encoded")
-    #plot.plot()
-
-    #plot = ResultsPlotter(experiment_name="MNIST_Embed_Inception", metric="vs_encoded")
-    #plot.plot()
-
-    plotter = GeneralisationPlotter(experiment_name="GeneralisationMinMaxDiversity")
-    plotter.plotAccuracy(metric="test_accuracy", dataset=["MNIST", "EMNIST", "PneuNIST"])
+    plotter.printResults(output="test_accuracy")
 
 
 if __name__ == "__main__":
