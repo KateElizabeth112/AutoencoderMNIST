@@ -311,7 +311,7 @@ class ResultsProcesser:
         dataset_names = np.unique(self.results["dataset_name"].values)
 
         # print the first few lines of the latex table
-        print(r"\begin{tabular}{p{3.4cm}|p{0.7cm}p{0.7cm}p{0.7cm}p{0.7cm}|p{0.7cm}p{0.7cm}p{0.7cm}p{0.7cm}|p{0.7cm}p{0.7cm}p{0.7cm}p{0.7cm}|}")
+        print(r"\begin{tabular}{p{3.4cm}|p{0.7cm}p{0.7cm}p{0.7cm}|p{0.7cm}|p{0.7cm}p{0.7cm}p{0.7cm}|p{0.7cm}|p{0.7cm}p{0.7cm}p{0.7cm}|p{0.7cm}|}")
         print(r" &  \multicolumn{4}{|c|}{MNIST} & \multicolumn{4}{|c|}{EMNIST} &\multicolumn{4}{|c|}{PneuMNIST}\\")
         print(r"\hline")
         print(r"No. Samples & 500 & 1000 & 2000 & all & 500 & 1000 & 2000 & all & 200 & 500 & 1000 & all \\")
