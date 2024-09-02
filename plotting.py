@@ -267,6 +267,7 @@ class ResultsProcesser:
                     # calculate the correlation coefficient (returns an object)
                     ax.scatter(diversity_nonan, accuracy_nonnan, color=c)
                 ax.set_xlabel(self.plot_titles[i])
+        fig.text(0.015, 0.5, 'Test Set Accuracy', ha='center', va='center', rotation='vertical')
         plt.tight_layout()
         plt.show()
 
@@ -310,7 +311,7 @@ class ResultsProcesser:
         dataset_names = np.unique(self.results["dataset_name"].values)
 
         # print the first few lines of the latex table
-        print(r"\begin{tabular}{p{3.5cm}|p{0.6cm}p{0.6cm}p{0.6cm}p{0.6cm}|p{0.6cm}p{0.6cm}p{0.6cm}p{0.6cm}|p{0.6cm}p{0.6cm}p{0.6cm}p{0.6cm}|}")
+        print(r"\begin{tabular}{p{3.4cm}|p{0.7cm}p{0.7cm}p{0.7cm}p{0.7cm}|p{0.7cm}p{0.7cm}p{0.7cm}p{0.7cm}|p{0.7cm}p{0.7cm}p{0.7cm}p{0.7cm}|}")
         print(r" &  \multicolumn{4}{|c|}{MNIST} & \multicolumn{4}{|c|}{EMNIST} &\multicolumn{4}{|c|}{PneuMNIST}\\")
         print(r"\hline")
         print(r"No. Samples & 500 & 1000 & 2000 & all & 500 & 1000 & 2000 & all & 200 & 500 & 1000 & all \\")
@@ -350,6 +351,7 @@ class ResultsProcesser:
 def main():
     plotter = ResultsProcesser(experiment_name="GeneralisationMinMaxDiversity")
     plotter.plot(output="test_accuracy", dataset=["MNIST", "EMNIST"])
+    plotter.plot(output="test_accuracy", dataset=["PneuNIST"])
 
     plotter.printResults(output="test_accuracy")
 
