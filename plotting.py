@@ -251,22 +251,24 @@ class ResultsProcesser:
                 print("Metric {} not recognised".format(output))
 
             for i in range(len(self.diversity_scores)):
-                ax = axes.flat[i]
-                print(self.diversity_scores[i])
-                diversity = self.results[self.diversity_scores[i]][self.results["dataset_name"] == ds].values
+                # Check that we have this column present in the results CSV, if not, just skip
+                if self.diversity_scores[i] in self.results.columns:
+                    ax = axes.flat[i]
+                    diversity = self.results[self.diversity_scores[i]][self.results["dataset_name"] == ds].values
 
-                # Find out if we have any Nan values in scores (due to missing data)
-                nan_idx = np.isnan(diversity)
+                    # Find out if we have any Nan values in scores (due to missing data)
+                    nan_idx = np.isnan(diversity)
 
-                # filter out nan entries
-                diversity_nonan = diversity[np.invert(nan_idx)]
-                accuracy_nonnan = accuracy[np.invert(nan_idx)]
+                    # filter out nan entries
+                    diversity_nonan = diversity[np.invert(nan_idx)]
+                    accuracy_nonnan = accuracy[np.invert(nan_idx)]
 
-                # Check whether we have any data for this metric
-                if diversity_nonan.shape[0] > 0:
-                    # calculate the correlation coefficient (returns an object)
-                    ax.scatter(diversity_nonan, accuracy_nonnan, color=c)
-                ax.set_xlabel(self.plot_titles[i])
+                    # Check whether we have any data for this metric
+                    if diversity_nonan.shape[0] > 0:
+                        # calculate the correlation coefficient (returns an object)
+                        ax.scatter(diversity_nonan, accuracy_nonnan, color=c)
+                    ax.set_xlabel(self.plot_titles[i])
+
         fig.text(0.015, 0.5, 'Test Set Accuracy', ha='center', va='center', rotation='vertical')
         plt.tight_layout()
         plt.show()
@@ -349,11 +351,14 @@ class ResultsProcesser:
         print(r"\end{tabular}")
 
 def main():
-    plotter = ResultsProcesser(experiment_name="GeneralisationMinMaxDiversity")
-    plotter.plot(output="test_accuracy", dataset=["MNIST", "EMNIST"])
-    plotter.plot(output="test_accuracy", dataset=["PneuNIST"])
+    #plotter = ResultsProcesser(experiment_name="GeneralisationMinMaxDiversity")
+    #plotter.plot(output="test_accuracy", dataset=["MNIST", "EMNIST"])
+    #plotter.plot(output="test_accuracy", dataset=["PneuNIST"])
 
-    plotter.printResults(output="test_accuracy")
+    #plotter.printResults(output="test_accuracy")
+
+    plotter = ResultsProcesser(experiment_name="Generalisation_Fixed_Entropy")
+    plotter.plot(output="test_accuracy", dataset=["MNIST", "EMNIST"])
 
 
 if __name__ == "__main__":
