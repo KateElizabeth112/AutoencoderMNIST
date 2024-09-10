@@ -241,33 +241,54 @@ class ResultsProcesser:
         colours = colours_list[:num_datasets]
 
         for c, ds in zip(colours, dataset_names):
-            if output in ["test_accuracy", "valid_accuracy"]:
-                accuracy = self.results[output][self.results["dataset_name"] == ds].values
-            elif output == "generalisation_gap":
-                valid_accuracy = self.results["valid_accuracy"][self.results["dataset_name"] == ds].values
-                test_accuracy = self.results["test_accuracy"][self.results["dataset_name"] == ds].values
-                accuracy = test_accuracy - valid_accuracy / (0.5 * (test_accuracy + valid_accuracy))
-            else:
-                print("Metric {} not recognised".format(output))
+
+
+            # check how many different sample sizes we have for this dataset
+            n_samples = np.unique(self.results["n_samples"][self.results["dataset_name"] == ds].values)
+
+            # generate some colours
+            colours = colours_list[:len(n_samples)]
 
             for i in range(len(self.diversity_scores)):
                 # Check that we have this column present in the results CSV, if not, just skip
                 if self.diversity_scores[i] in self.results.columns:
                     ax = axes.flat[i]
-                    diversity = self.results[self.diversity_scores[i]][self.results["dataset_name"] == ds].values
 
-                    # Find out if we have any Nan values in scores (due to missing data)
-                    nan_idx = np.isnan(diversity)
+                    # iterate over the number of samples in the training dataset
+                    for c, ns in zip(colours, n_samples):
+                        # filter by the diversity metric, dataset name and the number of samples in training data
+                        condition1 = self.results["dataset_name"] == ds
+                        condition2 = self.results["n_samples"] == ns
+                        diversity = self.results[self.diversity_scores[i]][condition1 & condition2].values
 
-                    # filter out nan entries
-                    diversity_nonan = diversity[np.invert(nan_idx)]
-                    accuracy_nonnan = accuracy[np.invert(nan_idx)]
+                        if output in ["test_accuracy", "valid_accuracy"]:
+                            accuracy = self.results[output][condition1 & condition2].values
+                        elif output == "generalisation_gap":
+                            valid_accuracy = self.results["valid_accuracy"][condition1 & condition2].values
+                            test_accuracy = self.results["test_accuracy"][condition1 & condition2].values
+                            accuracy = test_accuracy - valid_accuracy / (0.5 * (test_accuracy + valid_accuracy))
+                        else:
+                            print("Metric {} not recognised".format(output))
 
-                    # Check whether we have any data for this metric
-                    if diversity_nonan.shape[0] > 0:
-                        # calculate the correlation coefficient (returns an object)
-                        ax.scatter(diversity_nonan, accuracy_nonnan, color=c)
+                        # Find out if we have any Nan values in scores (due to missing data)
+                        nan_idx = np.isnan(diversity)
+
+                        # filter out nan entries
+                        diversity_nonan = diversity[np.invert(nan_idx)]
+                        accuracy_nonnan = accuracy[np.invert(nan_idx)]
+
+                        # Check whether we have any data for this metric
+                        if diversity_nonan.shape[0] > 0:
+                            # calculate the correlation coefficient (returns an object)
+                            ax.scatter(diversity_nonan, accuracy_nonnan, color=c, label="n_samples={0}".format(ns))
                     ax.set_xlabel(self.plot_titles[i])
+
+        # Turn off the last plot's axes
+        ax = axes.flat[i+1]
+        for c, ns in zip(colours, n_samples):
+            ax.scatter([], [], color=c, label="n_samples={0}".format(ns))
+        ax.axis("off")
+        ax.legend()
 
         fig.text(0.015, 0.5, 'Test Set Accuracy', ha='center', va='center', rotation='vertical')
         plt.tight_layout()
@@ -351,14 +372,14 @@ class ResultsProcesser:
         print(r"\end{tabular}")
 
 def main():
-    #plotter = ResultsProcesser(experiment_name="GeneralisationMinMaxDiversity")
-    #plotter.plot(output="test_accuracy", dataset=["MNIST", "EMNIST"])
+    plotter = ResultsProcesser(experiment_name="GeneralisationMinMaxDiversity")
+    plotter.plot(output="test_accuracy", dataset=["PneuNIST"])
     #plotter.plot(output="test_accuracy", dataset=["PneuNIST"])
 
     #plotter.printResults(output="test_accuracy")
 
-    plotter = ResultsProcesser(experiment_name="Generalisation_Fixed_Entropy")
-    plotter.plot(output="test_accuracy", dataset=["MNIST", "EMNIST"])
+    #plotter = ResultsProcesser(experiment_name="Generalisation_Fixed_Entropy")
+    #plotter.plot(output="test_accuracy", dataset=["MNIST", "EMNIST"])
 
 
 if __name__ == "__main__":
