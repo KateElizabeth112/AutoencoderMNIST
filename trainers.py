@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.metrics import roc_auc_score
 from torch.utils.data.dataset import Dataset
 from plotting import LossPlotter
 import os
@@ -29,7 +30,7 @@ class Trainer:
 
         # Run some checks on the value of model type
         if model_type not in ("AE", "classifier", "binary_classifier"):
-            raise ValueError("The model type {} does not exist".format(self.experiment_name))
+            raise ValueError("The model type {} does not exist".format(model_type))
 
         # Check if we have a GPU
         if torch.cuda.is_available():
@@ -243,6 +244,16 @@ class Inference:
     Inference class for a trained model (autoencoder or classifer).
     """
     def __init__(self, model, test_data, model_type="AE"):
+        # check the types of our arguments
+        assert isinstance(model_type, str), "model_type must be a string"
+        assert isinstance(model, nn.Module), "model is not an instance of nn.Module"
+        assert isinstance(test_data, Dataset), "test_data is not an instance of Dataset"
+
+        # Run some checks on the value of model type
+        supported_model_types = ["AE", "classifier", "binary_classifier"]
+        if model_type not in supported_model_types:
+            raise ValueError("The model type {0} is not recognised. Please set to one of {1}".format(model_type, supported_model_types))
+
         # Check if we have a GPU
         if torch.cuda.is_available():
             self.device = torch.device('cuda')
@@ -252,10 +263,10 @@ class Inference:
         self.model = model.to(self.device)
         self.test_data = test_data
         self.model_type = model_type
-
         self.test_loader = torch.utils.data.DataLoader(self.test_data, batch_size=10, num_workers=0)
 
         print("Running inference on {}".format(self.device))
+        print("Model type is {}".format(self.model_type))
 
     def eval(self):
         """
@@ -275,14 +286,18 @@ class Inference:
         preds_all = []
         labels_all = []
 
+        # if this is a binary classifier, we want the ROC, so store probabilities
+        if self.model_type == "binary_classifier":
+            probs_all = []
+
         for images, labels in self.test_loader:
             # Make sure the images and labels are on the right type of device (cuda or cpu)
             images = images.to(self.device)
             labels = labels.to(self.device)
 
-            preds, _ = self.model(images)
+            logits, _ = self.model(images)
 
-            preds = torch.argmax(preds, dim=1)
+            preds = torch.argmax(logits, dim=1)
 
             # convert to numpy arrays
             preds = preds.detach().cpu().numpy()
@@ -292,9 +307,19 @@ class Inference:
             preds_all += list(preds)
             labels_all += list(labels)
 
+            # if this is a binary classifier, we want the ROC, so store logits
+            if self.model_type == "binary_classifier":
+                probs = torch.softmax(logits, dim=1).detach().cpu().numpy()
+                probs_all += list(probs[:, 0])
+
         # calculate accuracy
         error = np.array(preds_all) - np.array(labels_all)
         error[error != 0] = 1
         accuracy = 1 - (np.sum(error) / error.shape[0])
+
+        # if this is a binary classifier, calculate ROC
+        if self.model_type == "binary_classifier":
+            auroc = roc_auc_score(np.array(labels_all), np.array(probs_all))
+            print("AUROC {}".format(auroc))
 
         return accuracy

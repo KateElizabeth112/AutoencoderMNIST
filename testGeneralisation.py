@@ -81,6 +81,8 @@ def main():
 
         ae_model_name = "autoencoderMNISTfull_339108.pt"
 
+        model_type = "classifier"
+
     elif dataset_name == "EMNIST":
         train_data = datasets.EMNIST(root=data_dir, split="digits", train=False, download=False,
                                      transform=transform_emnist)
@@ -91,6 +93,8 @@ def main():
         out_features = 10
         ae_model_name = "autoencoderMNISTfull_339108.pt"
 
+        model_type = "classifier"
+
     elif dataset_name == "PneuNIST":
         print("Getting data for {}".format(dataset_name))
         train_data = MedNISTDataset(data_dir, split="train", task="pneumoniamnist")
@@ -98,6 +102,8 @@ def main():
         test_data = MedNISTDataset(data_dir, split="test", task="pneumoniamnist")
         out_features = 2
         ae_model_name = "autoencoderMedMNISTfull.pt"
+
+        model_type = "binary_classifier"
 
     print("Finished loading data.")
 
@@ -169,10 +175,10 @@ def main():
     _ = trainer.train()
 
     # run inference on the test and validation data
-    inferencer = Inference(model, valid_data, model_type="classifier")
+    inferencer = Inference(model, valid_data, model_type=model_type)
     valid_accuracy = inferencer.eval()
 
-    inferencer = Inference(model, test_data, model_type="classifier")
+    inferencer = Inference(model, test_data, model_type=model_type)
     test_accuracy = inferencer.eval()
 
     print("Finished experiment.")

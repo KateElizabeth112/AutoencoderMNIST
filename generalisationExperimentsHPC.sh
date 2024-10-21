@@ -15,8 +15,8 @@ module load anaconda3/personal
 
 # generate params files
 #python generateParamsFiles.py -e "Generalisation_Fixed_Entropy" -r "/rds/general/user/kc2322/home"
-python generateParamsFiles.py -e "GeneralisationMinMaxDiversity" -r "/rds/general/user/kc2322/home"
+python generateParamsFiles.py -e "GeneralisationMinMaxDiversity" -r "/Users/katecevora/Documents/PhD"
 
 # run experiments
 #python runExperiment.py  -e "Generalisation_Fixed_Entropy" -r "/rds/general/user/kc2322/home" -s "testGeneralisation.py" -n 500
-python runExperiment.py  -e "GeneralisationMinMaxDiversity" -r "/rds/general/user/kc2322/home" -s "testGeneralisation.py" -n 200 -d "PneuNIST"
+python runExperiment.py  -e "GeneralisationMinMaxDiversity" -r "/Users/katecevora/Documents/PhD" -s "testGeneralisation.py" -n 200 -d "PneuNIST"

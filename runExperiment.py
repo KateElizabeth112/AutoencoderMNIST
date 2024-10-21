@@ -4,11 +4,11 @@ import os
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Calculate the Vendi score for a dataset from embeddings of an AE model")
-parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="Generalisation_Fixed_Entropy")
+parser.add_argument("-e", "--experiment", type=str, help="Name of the experiment.", default="GeneralisationMinMaxDiversity")
 parser.add_argument("-r", "--root_dir", type=str, help="Root directory where the code and data are located", default="/Users/katecevora/Documents/PhD")
 parser.add_argument("-s", "--script_name", type=str, help="Name of the script to run the expermiment.", default="testGeneralisation.py")
-parser.add_argument("-n", "--num_samples", type=int, help="Number of dataset samples per category to use", default=20)
-parser.add_argument("-d", "--dataset", type=str, help="Dataset which we will use to run experiments", default="MNIST")
+parser.add_argument("-n", "--num_samples", type=int, help="Number of dataset samples per category to use", default=200)
+parser.add_argument("-d", "--dataset", type=str, help="Dataset which we will use to run experiments", default="PneuNIST")
 
 args = parser.parse_args()
 
